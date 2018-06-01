@@ -1,0 +1,147 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema targetNamespace="http://www.prov.vic.gov.au/digitalarchive/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:dam="http://www.prov.vic.gov.au/digitalarchive/" elementFormDefault="qualified" attributeFormDefault="unqualified">
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">Digital Archive Set Manifest Schema - Copyright 2004 Public Record Office Victoria</xsd:documentation>
+  </xsd:annotation>
+  <xsd:simpleType name="SeriesType">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="VPRS"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:simpleType name="ConsignmentType">
+    <xsd:restriction base="xsd:string">
+      <xsd:pattern value="[A-Z]{1,2}"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:simpleType name="MediaType">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="CD"/>
+      <xsd:enumeration value="DVD"/>
+      <xsd:enumeration value="DDS TAPE"/>
+      <xsd:enumeration value="LTO TAPE"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:simpleType name="JobId">
+    <xsd:restriction base="xsd:string">
+      <xsd:pattern value="[A-Z]{2}\s[0-9]{4}/[0-9]{4}">
+        <xsd:annotation>
+          <xsd:documentation>Pattern example: 'TR 2004/0001'.</xsd:documentation>
+        </xsd:annotation>
+      </xsd:pattern>
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:simpleType name="ComputerFilename">
+    <xsd:restriction base="xsd:string">
+      <xsd:maxLength value="256"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:simpleType name="FileIdentifier">
+    <xsd:restriction base="xsd:string">
+      <xsd:maxLength value="15"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:simpleType name="VersRecordIdentifier">
+    <xsd:restriction base="xsd:string">
+      <xsd:maxLength value="15"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:simpleType name="VeoTitle">
+    <xsd:restriction base="xsd:string">
+      <xsd:maxLength value="1024"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:simpleType name="VeoClassification">
+    <xsd:restriction base="xsd:string">
+      <xsd:maxLength value="1024"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:simpleType name="VeoAccessCategory">
+    <xsd:restriction base="xsd:string">
+      <xsd:maxLength value="1024"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:simpleType name="VeoDisposalAuthority">
+    <xsd:restriction base="xsd:string">
+      <xsd:maxLength value="1024"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:complexType name="VeoDateRange">
+    <xsd:sequence>
+      <xsd:element name="veo_start_date" type="dam:VeoDate" nillable="true"/>
+      <xsd:element name="veo_end_date" type="dam:VeoDate" nillable="true"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:simpleType name="VeoDate">
+    <xsd:restriction base="xsd:string">
+      <xsd:maxLength value="22"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:simpleType name="SizeKB">
+    <xsd:restriction base="xsd:nonNegativeInteger">
+      <xsd:maxInclusive value='999000000'/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:complexType name="ManifestObjectItem">
+    <xsd:sequence>
+      <xsd:element name="computer_filename" type="dam:ComputerFilename"/>
+      <xsd:element name="file_identifier" type="dam:FileIdentifier" maxOccurs="unbounded"/>
+      <xsd:element name="vers_record_identifier" type="dam:VersRecordIdentifier" nillable="true"/>
+      <xsd:element name="veo_title" type="dam:VeoTitle"/>
+      <xsd:element name="veo_classification" type="dam:VeoClassification"/>
+      <xsd:element name="veo_access_category" type="dam:VeoAccessCategory"/>
+      <xsd:element name="veo_disposal_authority" type="dam:VeoDisposalAuthority"/>
+      <xsd:element name="veo_date_range" type="dam:VeoDateRange"/>
+      <xsd:element name="size_kb" type="dam:SizeKB"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:complexType name="ManifestObjectList">
+    <xsd:sequence>
+      <xsd:element name="manifest_object_item" type="dam:ManifestObjectItem" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:complexType name="MediaItem">
+    <xsd:sequence>
+      <xsd:element name="media_written_date" type="xsd:date"/>
+      <xsd:element name="media_item_number" type="xsd:integer"/>
+      <xsd:element name="media_item_total_number" type="xsd:integer"/>
+      <xsd:element name="media_type" type="dam:MediaType"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:complexType name="MediaList">
+    <xsd:sequence>
+      <xsd:element name="media_item" type="dam:MediaItem" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:group name="CommonTransferElements">
+    <xsd:sequence>
+      <xsd:element name="created_timestamp" type="xsd:dateTime"/>
+      <xsd:element name="agency_id" type="xsd:integer"/>
+      <xsd:element name="series_type" type="dam:SeriesType"/>
+      <xsd:element name="series_number" type="xsd:integer"/>
+      <xsd:element name="job_id" type="dam:JobId"/>
+      <xsd:element name="consignment_type" type="dam:ConsignmentType"/>
+      <xsd:element name="consignment_number" type="xsd:integer"/>
+      <xsd:element name="manifest_object_list" type="dam:ManifestObjectList"/>
+    </xsd:sequence>
+  </xsd:group>
+  <xsd:complexType name="MediaTransfer">
+    <xsd:sequence>
+      <xsd:group ref="dam:CommonTransferElements"/>
+      <xsd:element name="media_list" type="dam:MediaList"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:complexType name="ElectronicTransfer">
+    <xsd:sequence>
+      <xsd:group ref="dam:CommonTransferElements"/>
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:complexType name="SetManifest">
+    <xsd:choice>
+      <xsd:element name="media_transfer" type="dam:MediaTransfer"/>
+      <xsd:element name="electronic_transfer" type="dam:ElectronicTransfer"/>
+    </xsd:choice>
+    <!-- choice element forces the XML data to have either one electronic transfer or one media transfer included -->
+  </xsd:complexType>
+  <xsd:element name="set_manifest" type="dam:SetManifest"/>
+</xsd:schema>
+

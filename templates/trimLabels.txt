@@ -1,0 +1,12 @@
+B	Briefs
+CB	Cabinet Boxes
+CD	Cabinet Documents
+CW	Cabinet Working Folders
+D	Corporate Documents
+LD	Legacy Documents
+P	Premier's Inward Correspondence
+CABF	Cabinet File
+CABD	Cabinet Directory
+DG	Unknown
+MB	Ministerial Briefing
+	Unknown Document Type
