@@ -349,6 +349,10 @@ public class InformationObject {
         StringBuilder sb = new StringBuilder();
         int i;
 
+        if (s == null) {
+            return " ";
+        }
+        
         for (i = 0; i < s.length(); i++) {
             switch (s.charAt(i)) {
                 case '"':
