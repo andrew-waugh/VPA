@@ -216,7 +216,10 @@ public class Packages {
      * Move a file from its current location to the SAMS package. The passed
      * path is relative to the root of the packages (i.e. starts with the VEO
      * name). The returned path is relative to the root directory of the SAMS
-     * package.
+     * package. Note that multiple VEO content files can refer to the same
+     * physical file in a content file. In this case, we move the file once
+     * to the SAMS directory and just return the path of the SAMS file in
+     * subsequent calls for the same file.
      *
      * @param source the Path of the file to be moved
      * @return the Path of the relocated file relative to the SAMS directory
@@ -240,8 +243,10 @@ public class Packages {
                     if (!Files.exists(p2)) {
                         Files.createDirectory(p2);
                     }
-                } else {
+                } else if (Files.exists(source)) { // already moved if multiple VEO content files refer to same file
                     Files.move(source, p2);
+                } else if (!Files.exists(p2)) {
+                    throw new AppError("Packages.moveFile(): source file '"+source.toString()+"' has been moved, but doesn't appear in SAMS package '"+p2.toString()+"'");
                 }
             }
         } catch (IOException ioe) {
