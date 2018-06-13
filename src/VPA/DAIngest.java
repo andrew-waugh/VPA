@@ -57,6 +57,10 @@ public class DAIngest {
     ArrayList<String> files;// files or directories to process
     Runtime r;
 
+    static final String PID_SERVER_URL = "http://192.168.240.135:80/handle-service/mintingHandle";
+    static final String USER_ID = "c42e0e76-0b8e-11e8-ab30-8b2f7fbf2ffe";
+    static final String PASSWORD = "c3ca421a-0b8e-11e8-ab30-9b25d003b8dd";
+
     // global variables storing information about this export (as a whole)
     Path sourceDirectory;   // directory in which VEOs are found
     Path supportDir;        // directory in which any support files (e.g. V3 schema) is to be found
@@ -102,14 +106,14 @@ public class DAIngest {
         }
         useRealHandleService = false;
         r = Runtime.getRuntime();
-        
-        setMetadata = " \"set\": {\"agency\":\"3455\", \"series\":\"421\", \"consignment\":\"P0\", \"accessStatus\":\"open\"}";
+
+        setMetadata = " \"set\": {\"ingestSetId\":\"12345\", \"agency\":\"3455\", \"series\":\"421\", \"consignment\":\"P0\", \"accessStatus\":\"open\"}";
 
         // process command line arguments
         configure(args);
 
         // set up processor
-        vp = new VPA(outputDirectory, supportDir, rdfIdPrefix, LOG.getLevel(), useRealHandleService);
+        vp = new VPA(outputDirectory, supportDir, rdfIdPrefix, LOG.getLevel(), useRealHandleService, PID_SERVER_URL, USER_ID, PASSWORD);
 
         // open statistics
         try {
@@ -235,7 +239,7 @@ public class DAIngest {
         } else if (verbose) {
             LOG.log(Level.INFO, "Verbose output is selected");
         }
-        LOG.log(Level.INFO, "Using real handle service: ''{0}''", new Object[]{useRealHandleService?"true":"false"});
+        LOG.log(Level.INFO, "Using real handle service: ''{0}''", new Object[]{useRealHandleService ? "true" : "false"});
         LOG.log(Level.INFO, "RDF Identifier prefix is ''{0}''", new Object[]{rdfIdPrefix});
         LOG.log(Level.INFO, "Source directory is ''{0}''", new Object[]{sourceDirectory.toString()});
         LOG.log(Level.INFO, "Output directory is ''{0}''", new Object[]{outputDirectory.toString()});
@@ -288,6 +292,7 @@ public class DAIngest {
 
     /**
      * Process the list of files or directories passed in on the command line
+     *
      * @param count number of time to repeat
      */
     public void stressTest(int count) {

@@ -36,16 +36,19 @@ public class VPA {
      * @param rdfIdPrefix prefix to be used to construct RDF
      * @param logLevel logging level (INFO = verbose, FINE = debug)
      * @param useRealHandleService true if the real handle service is to be used
+     * @param pidServURL URL of the PID server
+     * @param pidUserId user id to log into the PID server
+     * @param pidPasswd password of user logging into the PID server
      * @throws AppFatal if an error occurred that precludes further processing
      */
-    public VPA(Path outputDir, Path supportDir, String rdfIdPrefix, Level logLevel, boolean useRealHandleService) throws AppFatal {
+    public VPA(Path outputDir, Path supportDir, String rdfIdPrefix, Level logLevel, boolean useRealHandleService, String pidServURL, String pidUserId, String pidPasswd) throws AppFatal {
 
         // default logging
         LOG.getParent().setLevel(logLevel);
         LOG.setLevel(null);
 
         // set up PID Service
-        ps = new PIDService(useRealHandleService);
+        ps = new PIDService(useRealHandleService, pidServURL, pidUserId, pidPasswd);
 
         // set up output packaging
         ff = new FileFormat(supportDir);

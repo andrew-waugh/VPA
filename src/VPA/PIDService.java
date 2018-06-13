@@ -28,13 +28,11 @@ import org.json.simple.parser.ParseException;
  */
 public class PIDService {
 
-    URL pidService;        // connection to the PID service
+    String serverURL;       // URL to connect to PID server
+    String credentials;     // password name and password to log into server
+    URL pidService;         // connection to the PID service
     Base64.Encoder b64e;    // Base64 encoder
     boolean useRealHandleService;   // if true use real handle service, otherwise fake it
-    static final String PID_SERVER_URL = "http://192.168.240.135:80/handle-service/mintingHandle";
-    static final String USER_ID = "c42e0e76-0b8e-11e8-ab30-8b2f7fbf2ffe";
-    static final String PASSWORD = "c3ca421a-0b8e-11e8-ab30-9b25d003b8dd";
-    static final String CREDENTIALS = USER_ID + ":" + PASSWORD;
     static final String PID_PREFIX = "20.500.12189";
     static final String DEFAULT_TARGET_URL = "http://www.prosentient.com.au";
     static final String DEFAULT_AUTHOR = "VPA";
@@ -45,23 +43,28 @@ public class PIDService {
      * the PIDService
      *
      * @param useRealHandleService if true use real handle service
+     * @param serverURL the URL of the server
+     * @param userId the user Id
+     * @param password the password of the user
      * @throws AppFatal if the underlying connection could not be opened
      */
-    public PIDService(boolean useRealHandleService) throws AppFatal {
+    public PIDService(boolean useRealHandleService, String serverURL, String userId, String password) throws AppFatal {
 
         this.useRealHandleService = useRealHandleService;
         
         // open the underlying connection
         try {
-            pidService = new URL(PID_SERVER_URL);
+            pidService = new URL(serverURL);
         } catch (MalformedURLException mue) {
             throw new AppFatal("PID Service URL is malformed: " + mue.getMessage());
         }
         b64e = Base64.getEncoder();
+        credentials = userId + ":" + password;
     }
 
     public void close() throws AppFatal {
         b64e = null;
+        credentials = null;
     }
 
     public String mint() throws AppFatal {
@@ -114,7 +117,7 @@ public class PIDService {
         op.setRequestProperty("Accept", "application/json");
         op.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
 
-        s = b64e.encodeToString(CREDENTIALS.getBytes(StandardCharsets.UTF_8));
+        s = b64e.encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
         op.setRequestProperty("Authorization", "Basic " + s);
 
         op.setRequestProperty("Content-Length", Integer.toString(b.length));

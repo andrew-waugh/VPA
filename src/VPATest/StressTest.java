@@ -59,6 +59,10 @@ public class StressTest {
     ArrayList<String> files;// files or directories to process
     Runtime r;
 
+    static final String PID_SERVER_URL = "http://192.168.240.135:80/handle-service/mintingHandle";
+    static final String USER_ID = "c42e0e76-0b8e-11e8-ab30-8b2f7fbf2ffe";
+    static final String PASSWORD = "c3ca421a-0b8e-11e8-ab30-9b25d003b8dd";
+
     // global variables storing information about this export (as a whole)
     int repeat;             // number of times to repeat the processing
     Path sourceDirectory;   // directory in which VEOs are found
@@ -105,7 +109,7 @@ public class StressTest {
         configure(args);
 
         // set up processor
-        vp = new VPA(outputDirectory, supportDir, rdfIdPrefix, LOG.getLevel(), false);
+        vp = new VPA(outputDirectory, supportDir, rdfIdPrefix, LOG.getLevel(), false, PID_SERVER_URL, USER_ID, PASSWORD);
     }
 
     /**
@@ -435,7 +439,7 @@ public class StressTest {
      * @param args command line arguments
      */
     public static void main() {
-        String[] args = {"-c","10","-v","-s","./support","-o","./output","./test"};
+        String[] args = {"-c", "10", "-v", "-s", "./support", "-o", "./output", "./test"};
         StressTest st;
 
         try {
