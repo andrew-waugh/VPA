@@ -33,45 +33,10 @@ public class MetadataPackage {
         StringBuilder sb = new StringBuilder();
         sb.append("    {\n");
         sb.append("    \"id\":" + id + ",\n");
-        if (schema != null) {
-            sb.append("    \"schema\":\"" + jsonSafe(schema) + "\",\n");
-        }
-        if (syntax != null) {
-            sb.append("    \"format\":\"" + jsonSafe(syntax) + "\",\n");
-        }
-        if (content != null) {
-            sb.append("    \"content\":\"" + jsonSafe(content) + "\"");
-        }
+        sb.append("    \"schema\":\"" + Json.safe(schema) + "\",\n");
+        sb.append("    \"format\":\"" + Json.safe(syntax) + "\",\n");
+        sb.append("    \"content\":\"" + Json.safe(content) + "\"");
         sb.append("}");
-        return sb.toString();
-    }
-
-    private String jsonSafe(String s) {
-        StringBuilder sb = new StringBuilder();
-        int i;
-
-        for (i = 0; i < s.length(); i++) {
-            switch (s.charAt(i)) {
-                case '"':
-                    sb.append("\\u0022");
-                    break;
-                case '\\':
-                    sb.append("\\u005c");
-                    break;
-                case '\n':
-                    sb.append("\\u000a");
-                    break;
-                case '\r':
-                    sb.append("\\u000d");
-                    break;
-                case '\t':
-                    sb.append("\\u0009");
-                    break;
-                default:
-                    sb.append(s.charAt(i));
-                    break;
-            }
-        }
         return sb.toString();
     }
 }

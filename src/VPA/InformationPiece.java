@@ -56,7 +56,7 @@ public class InformationPiece {
         int i;
 
         sb.append("    {\n");
-        sb.append("    \"ipLabel\":\"" + jsonSafe(label) + "\",\n");
+        sb.append("    \"ipLabel\":\"" + Json.safe(label) + "\",\n");
         sb.append("    \"ipSeqNo\":" + seqNbr + ",\n");
         if (contentFiles.size() > 0) {
             sb.append("    \"contentFiles\":[\n");
@@ -69,38 +69,6 @@ public class InformationPiece {
             sb.append("]\n");
         }
         sb.append("}");
-        return sb.toString();
-    }
-      
-    private String jsonSafe(String s) {
-        StringBuilder sb = new StringBuilder();
-        int i;
-
-        if (s == null) {
-            return "";
-        }
-        for (i = 0; i < s.length(); i++) {
-            switch (s.charAt(i)) {
-                case '"':
-                    sb.append("\\u0022");
-                    break;
-                case '\\':
-                    sb.append("\\u005c");
-                    break;
-                case '\n':
-                    sb.append("\\u000a");
-                    break;
-                case '\r':
-                    sb.append("\\u000d");
-                    break;
-                case '\t':
-                    sb.append("\\u0009");
-                    break;
-                default:
-                    sb.append(s.charAt(i));
-                    break;
-            }
-        }
         return sb.toString();
     }
 }

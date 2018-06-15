@@ -58,4 +58,35 @@ public class Relationship {
         descriptions.clear();
         descriptions = null;
     }
+
+    public String toJSON() {
+        StringBuilder sb;
+        int i;
+
+        sb = new StringBuilder();
+        sb.append("{\n");
+        for (i = 0; i < types.size(); i++) {
+            sb.append("     \"type\":\"" + Json.safe(types.get(i)) + "\"");
+            if (i < types.size() - 1) {
+                sb.append(",\n");
+            };
+            sb.append("],\n");
+        }
+        for (i = 0; i < targetIds.size(); i++) {
+            sb.append("     \"targetId\":\"" + Json.safe(targetIds.get(i)) + "\"");
+            if (i < targetIds.size() - 1) {
+                sb.append(",\n");
+            };
+            sb.append("],\n");
+        }
+        for (i = 0; i < descriptions.size(); i++) {
+            sb.append("     \"description\":\"" + Json.safe(descriptions.get(i)) + "\"");
+            if (i < descriptions.size() - 1) {
+                sb.append(",\n");
+            };
+            sb.append("],\n");
+        }
+        sb.append("}");
+        return sb.toString();
+    }
 }

@@ -197,25 +197,25 @@ public class InformationObject {
         int i, j;
 
         sb.append("{\n");
-        sb.append("  \"veoFileName\":\"" + jsonSafe(veoFileName) + "\",\n");
-        sb.append("  \"veoPID\": {\"scheme\": \"handle\", \"value\": \"" + jsonSafe(veoPID) + "\"},\n");
-        sb.append("  \"veoVersion\":\"" + jsonSafe(veoVersion) + "\",\n");
+        sb.append("  \"veoFileName\":\"" + Json.safe(veoFileName) + "\",\n");
+        sb.append("  \"veoPID\": {\"scheme\": \"handle\", \"value\": \"" + Json.safe(veoPID) + "\"},\n");
+        sb.append("  \"veoVersion\":\"" + Json.safe(veoVersion) + "\",\n");
         if (v2VeoType != null) {
-            sb.append("  \"v2VeoType\":\"" + jsonSafe(v2VeoType) + "\",\n");
+            sb.append("  \"v2VeoType\":\"" + Json.safe(v2VeoType) + "\",\n");
         }
         if (v2VEOId != null) {
             sb.append("  \"v2VEOId\":" + v2VEOId + ",\n");
         }
         if (parent != null) {
-            sb.append("  \"parent\":\"" + jsonSafe(parent.ioPID) + "\",\n");
+            sb.append("  \"parent\":\"" + Json.safe(parent.ioPID) + "\",\n");
         }
-        sb.append("  \"ioPID\": {\"scheme\": \"handle\", \"value\": \"" + jsonSafe(ioPID) + "\"},\n");
+        sb.append("  \"ioPID\": {\"scheme\": \"handle\", \"value\": \"" + Json.safe(ioPID) + "\"},\n");
         sb.append("  \"ioSeqNo\":" + seqNo + ",\n");
         sb.append("  \"ioDepth\":" + depth + ",\n");
         if (children.size() > 0) {
             sb.append("  \"children\":[\n");
             for (i = 0; i < children.size(); i++) {
-                sb.append("    {\"child\": {\"scheme\": \"handle\", \"value\": \"" + jsonSafe(children.get(i).ioPID) + "\"} }");
+                sb.append("    {\"child\": {\"scheme\": \"handle\", \"value\": \"" + Json.safe(children.get(i).ioPID) + "\"} }");
                 if (i < children.size() - 1) {
                     sb.append(",\n");
                 }
@@ -223,10 +223,10 @@ public class InformationObject {
             sb.append("],\n");
         }
         if (title != null) {
-            sb.append("  \"title\":\"" + jsonSafe(title) + "\",\n");
+            sb.append("  \"title\":\"" + Json.safe(title) + "\",\n");
         }
         if (label != null) {
-            sb.append("  \"label\":\"" + jsonSafe(label) + "\",\n");
+            sb.append("  \"label\":\"" + Json.safe(label) + "\",\n");
         }
         if (ids.size() > 0) {
             sb.append("  \"identifiers\":[\n");
@@ -239,15 +239,15 @@ public class InformationObject {
             sb.append("],\n");
         }
         if (dateCreated != null) {
-            sb.append("  \"dateCreated\":\"" + jsonSafe(dateCreated) + "\",\n");
+            sb.append("  \"dateCreated\":\"" + Json.safe(dateCreated) + "\",\n");
         }
         if (dateRegistered != null) {
-            sb.append("  \"dateRegistered\":\"" + jsonSafe(dateRegistered) + "\",\n");
+            sb.append("  \"dateRegistered\":\"" + Json.safe(dateRegistered) + "\",\n");
         }
         if (descriptions.size() > 0) {
             sb.append("  \"descriptions\":[\n");
             for (i = 0; i < descriptions.size(); i++) {
-                sb.append("    {\"description\":\"" + jsonSafe(descriptions.get(i)) + "\"}");
+                sb.append("    {\"description\":\"" + Json.safe(descriptions.get(i)) + "\"}");
                 if (i < descriptions.size() - 1) {
                     sb.append(",\n");
                 }
@@ -257,30 +257,8 @@ public class InformationObject {
         if (relations.size() > 0) {
             sb.append("  \"relationships\":[\n");
             for (i = 0; i < relations.size(); i++) {
-                sb.append("    {\"relation\":{\n");
-                Relationship r = relations.get(i);
-                for (j = 0; j < r.types.size(); j++) {
-                    sb.append("     \"type\":\"" + jsonSafe(r.types.get(j)) + "\"");
-                    if (i < r.types.size() - 1) {
-                        sb.append(",\n");
-                    };
-                    sb.append("],\n");
-                }
-                for (j = 0; j < r.targetIds.size(); j++) {
-                    sb.append("     \"targetId\":\"" + jsonSafe(r.targetIds.get(j)) + "\"");
-                    if (i < r.targetIds.size() - 1) {
-                        sb.append(",\n");
-                    };
-                    sb.append("],\n");
-                }
-                for (j = 0; j < r.descriptions.size(); j++) {
-                    sb.append("     \"description\":\"" + jsonSafe(r.descriptions.get(j)) + "\"");
-                    if (i < r.descriptions.size() - 1) {
-                        sb.append(",\n");
-                    };
-                    sb.append("],\n");
-                }
-                sb.append("}");
+                sb.append("    {\"relation\":");
+                sb.append(relations.get(i).toJSON());
                 if (i < relations.size() - 1) {
                     sb.append(",\n");
                 }
@@ -290,7 +268,7 @@ public class InformationObject {
         if (jurisdictionalCoverage.size() > 0) {
             sb.append("  \"jurisdictionalCoverage\":[\n");
             for (i = 0; i < jurisdictionalCoverage.size(); i++) {
-                sb.append("    {\"jurisdiction\":\"" + jsonSafe(jurisdictionalCoverage.get(i)) + "\"}");
+                sb.append("    {\"jurisdiction\":\"" + Json.safe(jurisdictionalCoverage.get(i)) + "\"}");
                 if (i < jurisdictionalCoverage.size() - 1) {
                     sb.append(",\n");
                 }
@@ -300,7 +278,7 @@ public class InformationObject {
         if (spatialCoverage.size() > 0) {
             sb.append("  \"spatialCoverage\":[\n");
             for (i = 0; i < spatialCoverage.size(); i++) {
-                sb.append("    {\"place\":\"" + jsonSafe(spatialCoverage.get(i)) + "\"}");
+                sb.append("    {\"place\":\"" + Json.safe(spatialCoverage.get(i)) + "\"}");
                 if (i < spatialCoverage.size() - 1) {
                     sb.append(",\n");
                 }
@@ -310,7 +288,7 @@ public class InformationObject {
         if (disposalAuthorisations.size() > 0) {
             sb.append("  \"disposalAuthorisation\":[\n");
             for (i = 0; i < disposalAuthorisations.size(); i++) {
-                sb.append("    {\"mandate\":\"" + jsonSafe(disposalAuthorisations.get(i)) + "\"}");
+                sb.append("    {\"mandate\":\"" + Json.safe(disposalAuthorisations.get(i)) + "\"}");
                 if (i < disposalAuthorisations.size() - 1) {
                     sb.append(",\n");
                 }
@@ -345,38 +323,6 @@ public class InformationObject {
         return sb.toString();
     }
 
-    private String jsonSafe(String s) {
-        StringBuilder sb = new StringBuilder();
-        int i;
-
-        if (s == null) {
-            return " ";
-        }
-        
-        for (i = 0; i < s.length(); i++) {
-            switch (s.charAt(i)) {
-                case '"':
-                    sb.append("\\u0022");
-                    break;
-                case '\\':
-                    sb.append("\\u005c");
-                    break;
-                case '\n':
-                    sb.append("\\u000a");
-                    break;
-                case '\r':
-                    sb.append("\\u000d");
-                    break;
-                case '\t':
-                    sb.append("\\u0009");
-                    break;
-                default:
-                    sb.append(s.charAt(i));
-                    break;
-            }
-        }
-        return sb.toString();
-    }
 
     /**
      * This private class encapsulates the information associated with an
@@ -405,8 +351,8 @@ public class InformationObject {
             StringBuilder sb = new StringBuilder();
 
             sb.append("{");
-            sb.append("\"value\":\"" + jsonSafe(idString) + "\", ");
-            sb.append("\"scheme\":\"" + jsonSafe(idScheme) + "\"");
+            sb.append("\"value\":\"" + Json.safe(idString) + "\", ");
+            sb.append("\"scheme\":\"" + Json.safe(idScheme) + "\"");
             sb.append("}");
             return sb.toString();
         }

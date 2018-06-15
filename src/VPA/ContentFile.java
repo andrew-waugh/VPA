@@ -50,52 +50,14 @@ public class ContentFile {
 
         sb.append("      {\n");
         sb.append("      \"cfSeqNo\":" + seqNbr + ",\n");
-        if (sourceFileName != null) {
-            sb.append("      \"sourceFileName\":\"" + jsonSafe(sourceFileName) + "\",\n");
-        }
-        if (fileExt != null) {
-            sb.append("      \"sourceFileExtension\":\"" + jsonSafe(fileExt) + "\",\n");
-        }
+        sb.append("      \"sourceFileName\":\"" + Json.safe(sourceFileName) + "\",\n");
+        sb.append("      \"sourceFileExtension\":\"" + Json.safe(fileExt) + "\",\n");
         if (fileLocation != null) {
-            sb.append("      \"fileLocation\":\"" + jsonSafe(fileLocation.toString()) + "\",\n");
+            sb.append("      \"fileLocation\":\"" + Json.safe(fileLocation.toString()) + "\",\n");
         }
         sb.append("      \"fileSizeBytes\":" + fileSize + ",\n");
-        if (uri != null) {
-            sb.append("      \"samsURI\":\"" + jsonSafe(uri) + "\"");
-        } else {
-            sb.append("      \"samsURI\":\"aa\"");
-        }
+        sb.append("      \"samsURI\":\"" + Json.safe(uri) + "\"");
         sb.append("}");
-        return sb.toString();
-    }
-    
-    
-    private String jsonSafe(String s) {
-        StringBuilder sb = new StringBuilder();
-        int i;
-
-        for (i = 0; i < s.length(); i++) {
-            switch (s.charAt(i)) {
-                case '"':
-                    sb.append("\\u0022");
-                    break;
-                case '\\':
-                    sb.append("\\u005c");
-                    break;
-                case '\n':
-                    sb.append("\\u000a");
-                    break;
-                case '\r':
-                    sb.append("\\u000d");
-                    break;
-                case '\t':
-                    sb.append("\\u0009");
-                    break;
-                default:
-                    sb.append(s.charAt(i));
-                    break;
-            }
-        }
         return sb.toString();
     }
 }

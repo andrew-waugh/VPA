@@ -40,9 +40,9 @@ public class Event {
         StringBuilder sb = new StringBuilder();
 
         sb.append("   {\n");
-        sb.append("    \"EventDateTime\":\"" + timestamp + "\",\n");
-        sb.append("    \"EventType\":\"" + eventType + "\",\n");
-        sb.append("    \"EventDescription\":\"" + description + "\"}");
+        sb.append("    \"eventDateTime\":\"" + Json.safe(timestamp) + "\",\n");
+        sb.append("    \"eventType\":\"" + Json.safe(eventType) + "\",\n");
+        sb.append("    \"eventDescription\":\"" + Json.safe(description) + "\"}");
         return sb.toString();
     }
 
