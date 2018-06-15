@@ -586,6 +586,7 @@ public class V3Process {
          */
         @Override
         public void endElement(String eFound, String value, String element) throws SAXException {
+            String s;
             int i, depth;
             InformationObject parent;
 
@@ -747,6 +748,14 @@ public class V3Process {
                     break;
                 case "vers:InformationObject/vers:InformationPiece/vers:ContentFile/vers:PathName":
                     cf.fileLocation = veoDir.resolve(value);
+                    s = cf.fileLocation.getFileName().toString();
+                    i = s.lastIndexOf(".");
+                    if (i == -1) {
+                        cf.fileExt = "unknown";
+                    } else {
+                        cf.fileExt = s.substring(i);
+                    }
+                    cf.sourceFileName = value;
                     cf.seqNbr = seqNo;
                     seqNo++;
 
@@ -762,22 +771,22 @@ public class V3Process {
                     break;
             }
         }
-        
+
         /**
          * Add an AGLS relationship to an IO
-         * 
+         *
          * @param type type of relationship
          * @param target other end of the relationship
          */
         private void addAGLSRelation(String type, String target) {
             int i, j;
             Relationship r;
-            
+
             // search to see if this relationship type has already been seen
             // if so, add the target to that relationship
-            for (i=0; i<io.relations.size(); i++) {
+            for (i = 0; i < io.relations.size(); i++) {
                 r = io.relations.get(i);
-                for (j=0; j<r.types.size(); j++) {
+                for (j = 0; j < r.types.size(); j++) {
                     if (r.types.get(j).equals(type)) {
                         r.targetIds.add(target);
                         break;
@@ -787,7 +796,7 @@ public class V3Process {
                     break;
                 }
             }
-            
+
             // doesn't already exist, so add a new relationship
             if (i == io.relations.size()) {
                 io.relations.add(new Relationship(type, target, null));
