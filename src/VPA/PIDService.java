@@ -33,6 +33,7 @@ public class PIDService {
     URL pidService;         // connection to the PID service
     Base64.Encoder b64e;    // Base64 encoder
     boolean useRealHandleService;   // if true use real handle service, otherwise fake it
+    int count;              // unique vale to fake handle service
     static final String PID_PREFIX = "20.500.12189";
     static final String DEFAULT_TARGET_URL = "http://www.prosentient.com.au";
     static final String DEFAULT_AUTHOR = "VPA";
@@ -51,6 +52,7 @@ public class PIDService {
     public PIDService(boolean useRealHandleService, String serverURL, String userId, String password) throws AppFatal {
 
         this.useRealHandleService = useRealHandleService;
+        count = 0;
         
         // open the underlying connection
         try {
@@ -80,7 +82,8 @@ public class PIDService {
         
         // for testing, so we don't hit the production server unless necessary
         if (!useRealHandleService) {
-            return "123/"+LocalDateTime.now().toString();
+            count++;
+            return "123/"+count;
         }
 
         // build POST data in JSON
