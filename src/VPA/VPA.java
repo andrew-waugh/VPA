@@ -3,6 +3,8 @@
  * Licensed under the CC-BY license http://creativecommons.org/licenses/by/3.0/au/
  * Author Andrew Waugh
  * Version 1.0 February 2018
+ * Version 1.1 25 June 2018 The options for copying, moving, or linking content
+ * files were removed as files are now directly ZIPped from the original files.
  */
 package VPA;
 
