@@ -237,7 +237,7 @@ public class Packages {
         p1 = veoDir.relativize(source);
         p2 = samsDir;
         try {
-            for (i = 0; i < p1.getNameCount(); i++) {
+            for (i = 1; i < p1.getNameCount(); i++) {
                 p2 = p2.resolve(p1.getName(i));
                 if (i != p1.getNameCount() - 1) { // directory
                     if (!Files.exists(p2)) {

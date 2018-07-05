@@ -14,6 +14,7 @@ package VPA;
  */
 import VEOAnalysis.VEOAnalysis;
 import VERSCommon.VEOError;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -747,7 +748,8 @@ public class V3Process {
                     ip.label = value;
                     break;
                 case "vers:InformationObject/vers:InformationPiece/vers:ContentFile/vers:PathName":
-                    cf.fileLocation = veoDir.resolve(value);
+                    Path p = new File(value).toPath();
+                    cf.fileLocation = veoDir.resolve(p);
                     s = cf.fileLocation.getFileName().toString();
                     i = s.lastIndexOf(".");
                     if (i == -1) {
