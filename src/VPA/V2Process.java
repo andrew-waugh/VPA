@@ -13,6 +13,11 @@ package VPA;
  * packages for the DAS, AMS, & SAMS. An instance of the class is constructed
  * once and then may be called multiple times to process individual V2 VEOs.
  */
+import VERSCommon.AppFatal;
+import VERSCommon.AppError;
+import VERSCommon.HandleElement;
+import VERSCommon.XMLParser;
+import VERSCommon.XMLConsumer;
 import VEOCheck.VEOCheck;
 import VERSCommon.VEOError;
 import java.io.BufferedOutputStream;

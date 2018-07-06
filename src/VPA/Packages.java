@@ -9,6 +9,7 @@ package VPA;
 /**
  * This class generates the DAS, AMS, & SAMS packages
  */
+import VERSCommon.AppError;
 import java.io.BufferedOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;

@@ -36,8 +36,8 @@ package VPATest;
  *
  * 20180101 Based on TRIMExport
  */
-import VPA.AppError;
-import VPA.AppFatal;
+import VERSCommon.AppError;
+import VERSCommon.AppFatal;
 import VPA.VEOResult;
 import VPA.VPA;
 import java.io.IOException;

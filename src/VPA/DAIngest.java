@@ -36,6 +36,8 @@ package VPA;
  *
  * 20180101 Based on TRIMExport
  */
+import VERSCommon.AppFatal;
+import VERSCommon.AppError;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;

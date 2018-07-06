@@ -12,6 +12,11 @@ package VPA;
  * This class processes a V3 VEO, validates it, and generates the required
  * packages for the DAS, AMS, & SAMS.
  */
+import VERSCommon.AppFatal;
+import VERSCommon.AppError;
+import VERSCommon.HandleElement;
+import VERSCommon.XMLParser;
+import VERSCommon.XMLConsumer;
 import VEOAnalysis.VEOAnalysis;
 import VERSCommon.VEOError;
 import java.io.File;

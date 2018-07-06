@@ -6,6 +6,7 @@
  */
 package VPA;
 
+import VERSCommon.AppFatal;
 import java.util.ArrayList;
 
 /**

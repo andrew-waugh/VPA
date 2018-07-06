@@ -6,6 +6,7 @@
  */
 package VPA;
 
+import VERSCommon.AppFatal;
 import VERSCommon.VEOFatal;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
