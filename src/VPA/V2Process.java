@@ -128,7 +128,6 @@ public class V2Process {
     public VEOResult process(String setMetadata, Path veo, String recordName, Path packageDir) throws AppFatal, AppError {
         StringWriter out;
         ArrayList<InformationObject> ios;
-        String ioPID;
         VEOResult res;
         InformationObject io;   // current information object
         ArrayList<Event> events; // list of events read
