@@ -53,6 +53,7 @@ public class PIDService {
     public PIDService(boolean useRealHandleService, String serverURL, String userId, String password) throws AppFatal {
 
         this.useRealHandleService = useRealHandleService;
+        this.serverURL = serverURL;
         count = 0;
         
         // open the underlying connection
@@ -95,7 +96,7 @@ public class PIDService {
         j2 = new JSONObject();
         j2.put("index", "1");
         j2.put("type", "URL");
-        j2.put("value", DEFAULT_TARGET_URL);
+        j2.put("value", serverURL);
         ja1.add(j2);
         j2 = new JSONObject();
         j2.put("index", "2");
