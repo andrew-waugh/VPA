@@ -702,8 +702,11 @@ public class V2Process {
                 case "vers:FileMetadata/naa:Relation/naa:RelationDescription":
                 case "vers:RecordMetadata/naa:Date/naa:DateTimeCreated":
                 case "vers:FileMetadata/naa:Date/naa:DateTimeCreated":
+                case "vers:RecordMetadata/naa:Date/naa:DateTimeTransacted":
+                case "vers:FileMetadata/naa:Date/naa:DateTimeTransacted":
                 case "vers:RecordMetadata/naa:Date/naa:DateTimeRegistered":
                 case "vers:FileMetadata/naa:Date/naa:DateTimeRegistered":
+                case "vers:FileMetadata/naa:Date/vers:DateTimeClosed":
                 case "vers:RecordMetadata/naa:Coverage/naa:Jurisdiction":
                 case "vers:FileMetadata/naa:Coverage/naa:Jurisdiction":
                 case "vers:RecordMetadata/naa:Coverage/naa:Jurisdication": // spelling error in standard!
@@ -899,12 +902,25 @@ public class V2Process {
                 case "vers:FileMetadata/naa:Date/naa:DateTimeCreated":
                     if (finalVersion) {
                         io.dateCreated = value;
+                        io.dates.add(new Date("DateTimeCreated", value));
+                    }
+                    break;
+                case "vers:RecordMetadata/naa:Date/naa:DateTimeTransacted":
+                case "vers:FileMetadata/naa:Date/naa:DateTimeTransacted":
+                    if (finalVersion) {
+                        io.dates.add(new Date("DateTimeTransacted", value));
                     }
                     break;
                 case "vers:RecordMetadata/naa:Date/naa:DateTimeRegistered":
                 case "vers:FileMetadata/naa:Date/naa:DateTimeRegistered":
                     if (finalVersion) {
                         io.dateRegistered = value;
+                        io.dates.add(new Date("DateTimeRegistered", value));
+                    }
+                    break;
+                case "vers:FileMetadata/naa:Date/vers:DateTimeClosed":
+                    if (finalVersion) {
+                        io.dates.add(new Date("DateTimeClosed", value));
                     }
                     break;
                 case "vers:RecordMetadata/naa:Coverage/naa:Jurisdiction":

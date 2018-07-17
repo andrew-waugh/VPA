@@ -30,6 +30,7 @@ public class InformationObject {
     public ArrayList<Identifier> ids; // list of identifiers associated with this IO
     public String dateCreated;  // date item created (null if unknown)
     public String dateRegistered; // date item was registered (null if unknown)
+    public ArrayList<Date> dates; // a list of dates in the VEOs
     public ArrayList<String> descriptions; // descriptions from VEO
     public ArrayList<Relationship> relations; // links to other IOs
     public ArrayList<String> jurisdictionalCoverage;    // list of jurisdictional coverage metadata
@@ -45,6 +46,7 @@ public class InformationObject {
 
         children = new ArrayList<>();
         ids = new ArrayList<>();
+        dates = new ArrayList<>();
         descriptions = new ArrayList<>();
         relations = new ArrayList<>();
         metaPackages = new ArrayList<>();
@@ -87,6 +89,13 @@ public class InformationObject {
         }
         dateCreated = null;
         dateRegistered = null;
+        if (dates != null) {
+            for (i = 0; i < dates.size(); i++) {
+                dates.get(i).free();
+            }
+            dates.clear();
+            dates = null;
+        }
         if (descriptions != null) {
             for (i = 0; i < descriptions.size(); i++) {
                 descriptions.set(i, null);
@@ -232,7 +241,7 @@ public class InformationObject {
         if (ids.size() > 0) {
             sb.append("  \"identifiers\":[\n");
             for (i = 0; i < ids.size(); i++) {
-                sb.append("    {\"identifier\":{\"value\":" + ids.get(i).idString + ", \"scheme\":\""+ids.get(i).idScheme+"\"}}");
+                sb.append("    {\"identifier\":{\"value\":" + ids.get(i).idString + ", \"scheme\":\"" + ids.get(i).idScheme + "\"}}");
                 if (i < ids.size() - 1) {
                     sb.append(",\n");
                 }
@@ -244,6 +253,17 @@ public class InformationObject {
         }
         if (dateRegistered != null) {
             sb.append("  \"dateRegistered\":\"" + Json.safe(dateRegistered) + "\",\n");
+        }
+        System.out.println("Dates size"+dates.size());
+        if (dates.size() > 0) {
+            sb.append("  \"dates\":[\n");
+            for (i = 0; i < dates.size(); i++) {
+                sb.append("    "+dates.get(i).toJSON());
+                if (i < dates.size() - 1) {
+                    sb.append(",\n");
+                }
+            }
+            sb.append("],\n");
         }
         if (descriptions.size() > 0) {
             sb.append("  \"descriptions\":[\n");
@@ -323,7 +343,6 @@ public class InformationObject {
         sb.append("}");
         return sb.toString();
     }
-
 
     /**
      * This private class encapsulates the information associated with an

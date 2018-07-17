@@ -508,6 +508,12 @@ public class V3Process {
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:date":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:created":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:available":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:dateCopyrighted":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:dateLicensed":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:issued":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:modified":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:valid":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:title":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:identifier":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:description":
@@ -540,6 +546,7 @@ public class V3Process {
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Identifier/anzs5478:IdentifierScheme":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Name/anzs5478:NameWords":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:DateRange/anzs5478:StartDate":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:DateRange/anzs5478:EndDate":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Description":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Coverage/anzs5478:JurisdictionalCoverage":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Coverage/anzs5478:SpatialCoverage":
@@ -652,6 +659,7 @@ public class V3Process {
                     // only use plain date if we haven't seen a more precise date
                     if (io.dateCreated == null) {
                         io.dateCreated = value;
+                        io.dates.add(new Date("Date", value));
                     }
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:created":
@@ -660,6 +668,25 @@ public class V3Process {
                     if (io.dateCreated == null || io.dateCreated.length() < value.length()) {
                         io.dateCreated = value;
                     }
+                    io.dates.add(new Date("DateCreated", value));
+                    break;
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:available":
+                    io.dates.add(new Date("DateAvailable", value));
+                    break;
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:dateCopyrighted":
+                    io.dates.add(new Date("DateCopyrighted", value));
+                    break;
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:dateLicensed":
+                    io.dates.add(new Date("DateLicensed", value));
+                    break;
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:issued":
+                    io.dates.add(new Date("DateIssued", value));
+                    break;
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:modified":
+                    io.dates.add(new Date("DateModified", value));
+                    break;
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:valid":
+                    io.dates.add(new Date("DateValid", value));
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:title":
                     io.title = value;
@@ -732,6 +759,10 @@ public class V3Process {
                     if (io.dateCreated == null || io.dateCreated.length() < value.length()) {
                         io.dateCreated = value;
                     }
+                    io.dates.add(new Date("StartDate", value));
+                    break;
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:DateRange/anzs5478:EndDate":
+                    io.dates.add(new Date("EndDate", value));
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Description":
                     io.descriptions.add(value);
