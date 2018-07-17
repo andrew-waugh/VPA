@@ -753,8 +753,8 @@ public class V3Process {
                     ip.label = value;
                     break;
                 case "vers:InformationObject/vers:InformationPiece/vers:ContentFile/vers:PathName":
-                    Path p = new File(value).toPath();
-                    cf.fileLocation = veoDir.resolve(p);
+                    String safe = value.replaceAll("\\\\", "/");
+                    cf.fileLocation = veoDir.resolve(safe);
                     s = cf.fileLocation.getFileName().toString();
                     i = s.lastIndexOf(".");
                     if (i == -1) {
