@@ -241,7 +241,11 @@ public class InformationObject {
         if (ids.size() > 0) {
             sb.append("  \"identifiers\":[\n");
             for (i = 0; i < ids.size(); i++) {
-                sb.append("    {\"identifier\":{\"value\":" + ids.get(i).idString + ", \"scheme\":\"" + ids.get(i).idScheme + "\"}}");
+                String s = ids.get(i).idString;
+                if (!s.startsWith("{")) {
+                    s = "\""+s+"\"";
+                }
+                sb.append("    {\"identifier\":{\"value\":" + s + ", \"scheme\":\"" + ids.get(i).idScheme + "\"}}");
                 if (i < ids.size() - 1) {
                     sb.append(",\n");
                 }
