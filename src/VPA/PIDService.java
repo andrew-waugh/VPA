@@ -64,6 +64,8 @@ public class PIDService {
         }
         b64e = Base64.getEncoder();
         credentials = userId + ":" + password;
+        
+        System.out.println("URL: "+pidService.toString()+" cred: '"+credentials+"'");
     }
 
     public void close() throws AppFatal {
@@ -96,7 +98,8 @@ public class PIDService {
         j2 = new JSONObject();
         j2.put("index", "1");
         j2.put("type", "URL");
-        j2.put("value", serverURL);
+        // j2.put("value", serverURL);
+        j2.put("value", "http://www.intersearch.com.au");
         ja1.add(j2);
         j2 = new JSONObject();
         j2.put("index", "2");
@@ -105,6 +108,7 @@ public class PIDService {
         ja1.add(j2);
         j1.put("values", ja1);
         param = j1.toJSONString();
+        System.out.println(param);
         b = param.getBytes(StandardCharsets.UTF_8);
         // System.out.println(prettyPrintJSON(param));
 
