@@ -10,6 +10,7 @@ package VPA;
 
 import VERSCommon.AppFatal;
 import VERSCommon.AppError;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -20,7 +21,7 @@ import java.util.logging.Logger;
  *
  * This class kicks all the VEO processing off
  */
-public class VPA {
+public final class VPA {
 
     private final PIDService ps;          // class to encapsulate the PID Service
     private final Packages packages;      // Utility class to create the various packages
@@ -44,6 +45,8 @@ public class VPA {
      * @param pidUserId user id to log into the PID server
      * @param pidPasswd password of user logging into the PID server
      * @param pidPrefix prefix of the PID
+     * @param targetURL target URL of JSON request to PID server
+     * @param author author of JSON request to PID server
      * @throws AppFatal if an error occurred that precludes further processing
      */
     public VPA(Path outputDir, Path supportDir, String rdfIdPrefix, Level logLevel, boolean useRealHandleService, String pidServURL, String pidUserId, String pidPasswd, String pidPrefix, String targetURL, String author) throws AppFatal {
@@ -64,8 +67,15 @@ public class VPA {
         v3p = new V3Process(ps, outputDir, supportDir, packages, logLevel);
     }
 
-    public void free() {
+    /**
+     * Destroy this instance of the VPA
+     */
+    public void destructor() {
+        // ps.destructor();
         ff.free();
+        // packages.destructor();
+        // v2p.destructor();
+        // v3p.destructor();
     }
 
     /**
@@ -75,26 +85,41 @@ public class VPA {
      * parsing).
      *
      * An AppFatal error will be thrown if the VPA itself fails (typically a API
-     * call failed when it should always succeed). An AppError will be thrown if
-     * VEO processing failed for reasons other than an error in the VEO (e.g.
+     * call failing when it should always succeed). An AppError will be thrown
+     * if VEO processing failed for reasons other than an error in the VEO (e.g.
      * passed a null path to process). For any other issues, a VEOResult will be
      * returned containing details about the results of the processing.
      *
-     * @param setMetadata metadata to be added to the VEO from the set (in JSON)
+     * The veo and veoOutputDir must not be null. The veoOutputDir must exist
+     * and be a directory. The setMetadata may be null.
+     *
+     * The set metadata is a simple list of JSON properties. This are included
+     * verbatim in the AMS package in each RecordItem.
+     *
+     * @param setMetadata set metadata to be added to the AMS package
      * @param veo the file containing the VEO
-     * @param packageDir directory in which to create the packages
+     * @param veoOutputDir directory that will contain result of processing VEO
      * @return the result of processing the VEO
      * @throws AppFatal if a system error occurred
      * @throws AppError processing failed, but further VEOs can be submitted
      */
-    public VEOResult process(String setMetadata, Path veo, Path packageDir) throws AppFatal, AppError {
+    public VEOResult process(String setMetadata, Path veo, Path veoOutputDir) throws AppFatal, AppError {
         int i;
-        String recordName;      // name of this record element (from the file, without the final '.xml')
-        VEOResult res;          // result of processing the VEO
+        String recordName;  // name of this record element (from the file, without the final '.xml')
+        VEOResult res;      // result of processing the VEO
 
         // check parameters
         if (veo == null) {
-            throw new AppError("Passed null VEO file to be processed");
+            throw new AppError("Passed null VEO file to be processed (VPA.process())");
+        }
+        if (veoOutputDir == null) {
+            throw new AppError("Passed null package directory (VPA.process())");
+        }
+        if (!Files.exists(veoOutputDir)) {
+            throw new AppError("Package directory '" + veoOutputDir.toString() + "' does not exist (VPA.process())");
+        }
+        if (!Files.isDirectory(veoOutputDir)) {
+            throw new AppError("Package directory '" + veoOutputDir.toString() + "' is not a directory (VPA.process())");
         }
 
         // get the record name from the file name minus the file extension ('.veo' or '.zip')
@@ -106,30 +131,32 @@ public class VPA {
         }
 
         // create the package directories
-        packages.createDirs(packageDir);
+        packages.createDirs(veoOutputDir);
 
         // ensure that the set metadata is a straight collection of JSON properties
         // (i.e. strip off any leading '"set": {' or '{', and any trailing '}')
-        setMetadata = setMetadata.trim();
-        if (setMetadata.startsWith("\"set\"")) {
-            setMetadata = setMetadata.substring("\"set\"".length()).trim();
-        }
-        if (setMetadata.startsWith(":")) {
-            setMetadata = setMetadata.substring(":".length()).trim();
-        }
-        if (setMetadata.startsWith("{")) {
-            setMetadata = setMetadata.substring("{".length()).trim();
-        }
-        if (setMetadata.endsWith("}")) {
-            setMetadata = setMetadata.substring(0, setMetadata.length() - "}".length()).trim();
+        if (setMetadata != null) {
+            setMetadata = setMetadata.trim();
+            if (setMetadata.startsWith("\"set\"")) {
+                setMetadata = setMetadata.substring("\"set\"".length()).trim();
+            }
+            if (setMetadata.startsWith(":")) {
+                setMetadata = setMetadata.substring(":".length()).trim();
+            }
+            if (setMetadata.startsWith("{")) {
+                setMetadata = setMetadata.substring("{".length()).trim();
+            }
+            if (setMetadata.endsWith("}")) {
+                setMetadata = setMetadata.substring(0, setMetadata.length() - "}".length()).trim();
+            }
         }
 
         // process the veo file
         try {
             if (veo.toString().toLowerCase().endsWith(".veo")) {
-                res = v2p.process(setMetadata, veo, recordName, packageDir);
+                res = v2p.process(setMetadata, veo, recordName, veoOutputDir);
             } else if (veo.toString().toLowerCase().endsWith(".zip")) {
-                res = v3p.process(setMetadata, veo, recordName, packageDir);
+                res = v3p.process(setMetadata, veo, recordName, veoOutputDir);
             } else {
                 throw new AppError("Error processing '" + veo.toString() + "' as file must end in '.zip' (V3) or '.veo' (V2)");
             }
