@@ -30,13 +30,13 @@ public class PIDService {
 
     String serverURL;       // URL to connect to PID server
     String credentials;     // password name and password to log into server
+    String pidPrefix;       // prefix for PID
+    String targetURL;       // target URL
+    String author;          // the author of the resource
     URL pidService;         // connection to the PID service
     Base64.Encoder b64e;    // Base64 encoder
     boolean useRealHandleService;   // if true use real handle service, otherwise fake it
     int count;              // unique vale to fake handle service
-    static final String PID_PREFIX = "20.500.12189";
-    static final String DEFAULT_TARGET_URL = "http://www.prosentient.com.au";
-    static final String DEFAULT_AUTHOR = "VPA";
 
     /**
      * Open a connection to the PID service. This connection is used by
@@ -47,9 +47,11 @@ public class PIDService {
      * @param serverURL the URL of the server
      * @param userId the user Id
      * @param password the password of the user
+     * @param targetURL the target URL
+     * @param author the author of the resource
      * @throws AppFatal if the underlying connection could not be opened
      */
-    public PIDService(boolean useRealHandleService, String serverURL, String userId, String password) throws AppFatal {
+    public PIDService(boolean useRealHandleService, String serverURL, String userId, String password, String pidPrefix, String targetURL, String author) throws AppFatal {
 
         this.useRealHandleService = useRealHandleService;
         this.serverURL = serverURL;
@@ -63,6 +65,9 @@ public class PIDService {
         }
         b64e = Base64.getEncoder();
         credentials = userId + ":" + password;
+        this.pidPrefix = pidPrefix;
+        this.targetURL = targetURL;
+        this.author = author;
     }
 
     public void close() throws AppFatal {
@@ -89,24 +94,23 @@ public class PIDService {
 
         // build POST data in JSON
         j1 = new JSONObject();
-        j1.put("prefix", PID_PREFIX);
+        j1.put("prefix", pidPrefix);
         j1.put("method", "guid");
         ja1 = new JSONArray();
         j2 = new JSONObject();
         j2.put("index", "1");
         j2.put("type", "URL");
-        // j2.put("value", serverURL);
-        j2.put("value", "http://www.intersearch.com.au");
+        j2.put("value", targetURL);
         ja1.add(j2);
         j2 = new JSONObject();
         j2.put("index", "2");
         j2.put("type", "AUTHOR");
-        j2.put("value", DEFAULT_AUTHOR);
+        j2.put("value", author);
         ja1.add(j2);
         j1.put("values", ja1);
         param = j1.toJSONString();
         b = param.getBytes(StandardCharsets.UTF_8);
-        // System.out.println(prettyPrintJSON(param));
+        System.out.println(prettyPrintJSON(param));
 
         // start a new HTTP operation (yes, the name is confusing)
         try {

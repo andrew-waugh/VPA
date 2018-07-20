@@ -258,7 +258,6 @@ public class InformationObject {
         if (dateRegistered != null) {
             sb.append("  \"dateRegistered\":\"" + Json.safe(dateRegistered) + "\",\n");
         }
-        System.out.println("Dates size"+dates.size());
         if (dates.size() > 0) {
             sb.append("  \"dates\":[\n");
             for (i = 0; i < dates.size(); i++) {

@@ -63,6 +63,9 @@ public class DAIngest {
     static final String PID_SERVER_URL = "http://150.207.155.198:80/handle-service/mintingHandle"; // from external
     static final String USER_ID = "c42e0e76-0b8e-11e8-ab30-8b2f7fbf2ffe";
     static final String PASSWORD = "c3ca421a-0b8e-11e8-ab30-9b25d003b8dd";
+    static final String PID_PREFIX = "20.500.12189";
+    static final String TARGET_URL = "http://www.intersearch.com.au";
+    static final String AUTHOR  = "VPA";
 
     // global variables storing information about this export (as a whole)
     Path sourceDirectory;   // directory in which VEOs are found
@@ -116,7 +119,7 @@ public class DAIngest {
         configure(args);
 
         // set up processor
-        vp = new VPA(outputDirectory, supportDir, rdfIdPrefix, LOG.getLevel(), useRealHandleService, PID_SERVER_URL, USER_ID, PASSWORD);
+        vp = new VPA(outputDirectory, supportDir, rdfIdPrefix, LOG.getLevel(), useRealHandleService, PID_SERVER_URL, USER_ID, PASSWORD, PID_PREFIX, TARGET_URL, AUTHOR);
 
         // open statistics
         try {
@@ -348,11 +351,10 @@ public class DAIngest {
             return;
         }
 
-        if (Files.isRegularFile(f)
-                && (f.toString().toLowerCase().endsWith(".veo") || f.toString().toLowerCase().endsWith(".zip"))) {
+        if (Files.isRegularFile(f)) {
             process(f);
         } else {
-            LOG.log(Level.INFO, "***Ignoring file ''{0}''", new Object[]{f.toString()});
+            LOG.log(Level.INFO, "***Ignoring directory ''{0}''", new Object[]{f.toString()});
         }
     }
 

@@ -43,16 +43,17 @@ public class VPA {
      * @param pidServURL URL of the PID server
      * @param pidUserId user id to log into the PID server
      * @param pidPasswd password of user logging into the PID server
+     * @param pidPrefix prefix of the PID
      * @throws AppFatal if an error occurred that precludes further processing
      */
-    public VPA(Path outputDir, Path supportDir, String rdfIdPrefix, Level logLevel, boolean useRealHandleService, String pidServURL, String pidUserId, String pidPasswd) throws AppFatal {
+    public VPA(Path outputDir, Path supportDir, String rdfIdPrefix, Level logLevel, boolean useRealHandleService, String pidServURL, String pidUserId, String pidPasswd, String pidPrefix, String targetURL, String author) throws AppFatal {
 
         // default logging
         LOG.getParent().setLevel(logLevel);
         LOG.setLevel(null);
 
         // set up PID Service
-        ps = new PIDService(useRealHandleService, pidServURL, pidUserId, pidPasswd);
+        ps = new PIDService(useRealHandleService, pidServURL, pidUserId, pidPasswd, pidPrefix, targetURL, author);
 
         // set up output packaging
         ff = new FileFormat(supportDir);

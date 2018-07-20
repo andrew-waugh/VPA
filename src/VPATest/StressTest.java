@@ -62,6 +62,9 @@ public class StressTest {
     static final String PID_SERVER_URL = "http://192.168.240.135:80/handle-service/mintingHandle";
     static final String USER_ID = "c42e0e76-0b8e-11e8-ab30-8b2f7fbf2ffe";
     static final String PASSWORD = "c3ca421a-0b8e-11e8-ab30-9b25d003b8dd";
+    static final String PID_PREFIX = "20.500.12189";
+    static final String TARGET_URL = "http://www.intersearch.com.au";
+    static final String AUTHOR  = "VPA";
 
     // global variables storing information about this export (as a whole)
     int repeat;             // number of times to repeat the processing
@@ -109,7 +112,7 @@ public class StressTest {
         configure(args);
 
         // set up processor
-        vp = new VPA(outputDirectory, supportDir, rdfIdPrefix, LOG.getLevel(), false, PID_SERVER_URL, USER_ID, PASSWORD);
+        vp = new VPA(outputDirectory, supportDir, rdfIdPrefix, LOG.getLevel(), false, PID_SERVER_URL, USER_ID, PASSWORD, PID_PREFIX, TARGET_URL, AUTHOR);
     }
 
     /**
