@@ -12,16 +12,17 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 
 /**
- * This package wraps file format handling. It's primary function is to map
- * between Mime types and file extensions. The basis of the handling is the
- * 'mime.types.txt' file.
+ * This class maps from file extensions to MIME types. The mapping is obtained
+ * from the 'mime.types.txt' file from apache. This file is located in the
+ * VPA support directory.
  */
-public class FileFormat {
+public final class FileFormat {
 
     HashMap<String, String> toMimeType;
 
@@ -30,7 +31,10 @@ public class FileFormat {
         readFormatFile(supportDir);
     }
     
-    public void free() {
+    /**
+     * Free the data associated with this instance
+     */
+    public void destructor() {
         toMimeType.clear();
         toMimeType = null;
     }
@@ -44,7 +48,7 @@ public class FileFormat {
      * Lines starting with '#' are comments and are ignored.
      *
      * @param supportDir the directory in which the file is to be found
-     * @throws VEOFatal if the file could not be read
+     * @throws AppFatal if the file could not be read
      */
     private void readFormatFile(Path supportDir) throws AppFatal {
         Path f;
@@ -56,7 +60,7 @@ public class FileFormat {
         String mimeType;
         int i, j;
 
-        f = Paths.get(supportDir.toString(), "mime.types.txt");
+        f = supportDir.resolve("mime.types.txt");
 
         // open mime.types.txt for reading
         fr = null;
@@ -66,13 +70,18 @@ public class FileFormat {
             br = new BufferedReader(fr);
 
             // go through mime.types.txt line by line
-            // ignore lines that do begin with a '#' - these are comment lines
             while ((s = br.readLine()) != null) {
                 s = s.trim();
+                
+                // ignore lines that do begin with a '#' - these are comment lines - and empty lines
                 if (s.length() == 0 || s.charAt(0) == '#') {
                     continue;
                 }
+                
+                // split line at tabs
                 tokens = s.split("\t");
+                
+                // ignore lines with a null or empty MIME type
                 if (tokens[0] != null) {
                     mimeType = tokens[0].trim();
                     if (mimeType.equals("") || mimeType.equals(" ")) {
@@ -81,7 +90,8 @@ public class FileFormat {
                 } else {
                     continue;
                 }
-                fileExt = null;
+                
+                // get list of file extensions associated with MIME type
                 for (i = 1; i < tokens.length; i++) {
                     if (tokens[i] != null) {
                         fileExt = tokens[i].trim().split(" ");
@@ -95,9 +105,9 @@ public class FileFormat {
                 }
             }
         } catch (FileNotFoundException e) {
-            throw new AppFatal("FileFormat.readFormatFile(): Failed to open '" + f.toAbsolutePath().toString() + "' as " + e.getMessage());
+            throw new AppFatal("Failed to open '" + f.toAbsolutePath().toString() + "' because " + e.getMessage() + "(VPA.FileFormat.readFormatFile())");
         } catch (IOException ioe) {
-            throw new AppFatal("FileFormat.readFormatFile(): Failed to open '" + f.toAbsolutePath().toString() + "' as " + ioe.getMessage());
+            throw new AppFatal("Failed to open '" + f.toAbsolutePath().toString() + "' because " + ioe.getMessage() + "(VPA.FileFormat.readFormatFile())");
         } finally {
             if (br != null) {
                 try {
