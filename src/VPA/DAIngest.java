@@ -59,7 +59,8 @@ public class DAIngest {
     ArrayList<String> files;// files or directories to process
     Runtime r;
 
-    static final String PID_SERVER_URL = "http://192.168.240.135:80/handle-service/mintingHandle";
+    // static final String PID_SERVER_URL = "http://192.168.240.135:80/handle-service/mintingHandle"; // internal
+    static final String PID_SERVER_URL = "http://150.207.155.198:80/handle-service/mintingHandle"; // from external
     static final String USER_ID = "c42e0e76-0b8e-11e8-ab30-8b2f7fbf2ffe";
     static final String PASSWORD = "c3ca421a-0b8e-11e8-ab30-9b25d003b8dd";
 

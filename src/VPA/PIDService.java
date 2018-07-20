@@ -15,7 +15,6 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
 import java.util.Base64;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -64,8 +63,6 @@ public class PIDService {
         }
         b64e = Base64.getEncoder();
         credentials = userId + ":" + password;
-        
-        System.out.println("URL: "+pidService.toString()+" cred: '"+credentials+"'");
     }
 
     public void close() throws AppFatal {
@@ -108,7 +105,6 @@ public class PIDService {
         ja1.add(j2);
         j1.put("values", ja1);
         param = j1.toJSONString();
-        System.out.println(param);
         b = param.getBytes(StandardCharsets.UTF_8);
         // System.out.println(prettyPrintJSON(param));
 
