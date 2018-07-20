@@ -51,6 +51,49 @@ public final class VPA {
      */
     public VPA(Path outputDir, Path supportDir, String rdfIdPrefix, Level logLevel, boolean useRealHandleService, String pidServURL, String pidUserId, String pidPasswd, String pidPrefix, String targetURL, String author) throws AppFatal {
 
+        // sanity checking
+        if (outputDir == null) {
+            throw new AppFatal("Passed null outputDir (VPA())");
+        }
+        if (!Files.exists(outputDir)) {
+            throw new AppFatal("Output directory '" + outputDir.toString() + "' does not exist (VPA())");
+        }
+        if (!Files.isDirectory(outputDir)) {
+            throw new AppFatal("Output directory '" + outputDir.toString() + "' is not a directory (VPA())");
+        }
+        if (supportDir == null) {
+            throw new AppFatal("Passed null support directory (VPA())");
+        }
+        if (!Files.exists(supportDir)) {
+            throw new AppFatal("Support directory '" + supportDir.toString() + "' does not exist (VPA())");
+        }
+        if (!Files.isDirectory(supportDir)) {
+            throw new AppFatal("Support directory '" + supportDir.toString() + "' is not a directory (VPA())");
+        }
+        if (rdfIdPrefix == null) {
+            throw new AppFatal("Passed null rdfIdPrefix (VPA())");
+        }
+        if (useRealHandleService) {
+            if (pidServURL == null) {
+                throw new AppFatal("Passed null URL for the persistent id server (VPA())");
+            }
+            if (pidUserId == null) {
+                throw new AppFatal("Passed null user id for the persistent id server (VPA())");
+            }
+            if (pidPasswd == null) {
+                throw new AppFatal("Passed null user password for the persistent id server (VPA())");
+            }
+            if (pidPrefix == null) {
+                throw new AppFatal("Passed null prefix for the persistent ids (VPA())");
+            }
+            if (targetURL == null) {
+                throw new AppFatal("Passed null target URL for the persistent ids (VPA())");
+            }
+            if (author == null) {
+                throw new AppFatal("Passed null author for the persistent ids (VPA())");
+            }
+        }
+
         // default logging
         LOG.getParent().setLevel(logLevel);
         LOG.setLevel(null);
@@ -72,7 +115,7 @@ public final class VPA {
      */
     public void destructor() {
         // ps.destructor();
-        ff.free();
+        ff.destructor();
         // packages.destructor();
         // v2p.destructor();
         // v3p.destructor();
