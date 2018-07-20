@@ -10,34 +10,21 @@ import java.nio.file.Path;
 import java.time.Instant;
 
 /**
- * This class represents the successful processing of a VEO.
- *
- * @author Andrew
+ * This class represents the result of processing a VEO.
  */
 public class VEOResult {
 
-    public String veoId;    // file name of VEO
-    public int veoType;     // type of VEO
-    static public int V2_VEO = 1;  // VEO was a V2 VEO
-    static public int V3_VEO = 2;  // VEO was a V3 VEO
-    public Instant timeProcStart; // time processing started
-    public Instant timeProcEnded; // time processing ended
-    public boolean success; // true if VEO was successfully processed
-    public String result;   // text describing the result of processing
-    public Path packages;   // the location of the packages generated
+    public String veoId;            // file name of VEO
+    public int veoType;             // type of VEO
+    static public int V2_VEO = 1;   // VEO was a V2 VEO
+    static public int V3_VEO = 2;   // VEO was a V3 VEO
+    public Instant timeProcStart;   // time processing started
+    public Instant timeProcEnded;   // time processing ended
+    public boolean success;         // true if VEO was successfully processed
+    public String result;           // text describing the result of processing
+    public Path packages;           // the location of the packages generated
 
     /**
-     * Construct a VEOResult
-     *
-     * @param result text describing the result
-     * @param packages DAS, AMS, & SAMS packages generated
-     */
-    public VEOResult(String result, Path packages) {
-        this.result = result;
-        this.packages = packages;
-    }
-    
-        /**
      * Construct a VEOResult
      *
      * @param veoType type of VEO being processed
