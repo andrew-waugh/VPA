@@ -22,21 +22,20 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 /**
- * Encapsulates a PIDService
- *
- * @author Andrew
+ * This class encapsulates a persistent identifier service. The mint call mints
+ * a new persistent identifier and returns it.
  */
 public class PIDService {
 
     String serverURL;       // URL to connect to PID server
     String credentials;     // password name and password to log into server
-    String pidPrefix;       // prefix for PID
-    String targetURL;       // target URL
-    String author;          // the author of the resource
     URL pidService;         // connection to the PID service
+    String pidPrefix;       // prefix for PID
+    String targetURL;       // URL of resource to be identified
+    String author;          // the creator of the resource
     Base64.Encoder b64e;    // Base64 encoder
     boolean useRealHandleService;   // if true use real handle service, otherwise fake it
-    int count;              // unique vale to fake handle service
+    int count;              // unique value to fake handle service
 
     /**
      * Open a connection to the PID service. This connection is used by
@@ -56,7 +55,7 @@ public class PIDService {
         this.useRealHandleService = useRealHandleService;
         this.serverURL = serverURL;
         count = 0;
-        
+
         // open the underlying connection
         try {
             pidService = new URL(serverURL);
@@ -70,11 +69,26 @@ public class PIDService {
         this.author = author;
     }
 
-    public void close() throws AppFatal {
+    /**
+     * Free the resources associated with this PID Service
+     *
+     * @throws AppFatal
+     */
+    public void free() throws AppFatal {
         b64e = null;
+        serverURL = null;
         credentials = null;
+        pidPrefix = null;
+        targetURL = null;
+        author = null;
     }
 
+    /**
+     * Use the PID service to mint a new persistent identifier
+     *
+     * @return a string containing the persistent identifier
+     * @throws AppFatal if something fails
+     */
     public String mint() throws AppFatal {
         HttpURLConnection op;
         int res;
@@ -85,14 +99,14 @@ public class PIDService {
         JSONObject j1, j2;
         JSONArray ja1;
         byte b[];
-        
+
         // for testing, so we don't hit the production server unless necessary
         if (!useRealHandleService) {
             count++;
-            return "123/"+count;
+            return "123/" + count;
         }
 
-        // build POST data in JSON
+        // build POST data in JSON and convert it to a UTF-8 encoded array of bytes
         j1 = new JSONObject();
         j1.put("prefix", pidPrefix);
         j1.put("method", "guid");
@@ -110,7 +124,7 @@ public class PIDService {
         j1.put("values", ja1);
         param = j1.toJSONString();
         b = param.getBytes(StandardCharsets.UTF_8);
-        System.out.println(prettyPrintJSON(param));
+        System.out.println(Json.prettyPrintJSON(param));
 
         // start a new HTTP operation (yes, the name is confusing)
         try {
@@ -134,14 +148,14 @@ public class PIDService {
         op.setDoInput(true);
         op.setDoOutput(true);
 
-        // we have finish configuring the HTTP operation
+        // we have finish configuring the HTTP operation, actually make the connection
         try {
             op.connect();
         } catch (IOException ioe) {
             throw new AppFatal("Failed to connect to PID Service: " + ioe.getMessage());
         }
 
-        // write POST data to server
+        // write the POST data to server
         try {
             op.getOutputStream().write(b);
             op.getOutputStream().close();
@@ -180,64 +194,16 @@ public class PIDService {
             /* ignore */ }
 
         if (prefix == null) {
-            throw new AppFatal("Did not find suffix in response from PID Service: " + prettyPrintJSON(j1.toString()));
+            throw new AppFatal("Did not find suffix in response from PID Service: " + Json.prettyPrintJSON(j1.toString()));
         }
         if (suffix == null) {
-            throw new AppFatal("Did not find suffix in response from PID Service: " + prettyPrintJSON(j1.toString()));
+            throw new AppFatal("Did not find suffix in response from PID Service: " + Json.prettyPrintJSON(j1.toString()));
         }
 
         // disconnect
         op.disconnect();
 
+        // return the persistent identifier
         return prefix + "/" + suffix;
-    }
-
-    /**
-     * Format the JSON string for ease of human reading
-     *
-     * @param in ugly JSON
-     * @return pretty printed JSON
-     */
-    private String prettyPrintJSON(String in) {
-        StringBuffer sb;
-        int i, j, indent;
-        char ch;
-
-        sb = new StringBuffer();
-        indent = 0;
-        for (i = 0; i < in.length(); i++) {
-            ch = in.charAt(i);
-            switch (ch) {
-                case '{':
-                    indent++;
-                    sb.append("{");
-                    break;
-                case '}':
-                    indent--;
-                    sb.append("}");
-                    break;
-                case '[':
-                    indent++;
-                    sb.append("[\n");
-                    for (j = 0; j < indent; j++) {
-                        sb.append(" ");
-                    }
-                    break;
-                case ']':
-                    indent--;
-                    sb.append("]");
-                    break;
-                case ',':
-                    sb.append(",\n");
-                    for (j = 0; j < indent; j++) {
-                        sb.append(" ");
-                    }
-                    break;
-                default:
-                    sb.append(ch);
-                    break;
-            }
-        }
-        return sb.toString();
     }
 }

@@ -14,6 +14,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  *
@@ -70,9 +73,11 @@ public final class VPA {
         if (!Files.isDirectory(supportDir)) {
             throw new AppFatal("Support directory '" + supportDir.toString() + "' is not a directory (VPA())");
         }
+        /* rdfIdPrefix is not used
         if (rdfIdPrefix == null) {
             throw new AppFatal("Passed null rdfIdPrefix (VPA())");
         }
+         */
         if (useRealHandleService) {
             if (pidServURL == null) {
                 throw new AppFatal("Passed null URL for the persistent id server (VPA())");
@@ -106,19 +111,19 @@ public final class VPA {
         packages = new Packages(ff);
 
         // set up V2 and V3 processors
-        v2p = new V2Process(ps, rdfIdPrefix, supportDir, packages, logLevel);
+        v2p = new V2Process(ps, ff, rdfIdPrefix, supportDir, packages, logLevel);
         v3p = new V3Process(ps, outputDir, supportDir, packages, logLevel);
     }
 
     /**
      * Destroy this instance of the VPA
      */
-    public void destructor() {
-        // ps.destructor();
-        ff.destructor();
-        // packages.destructor();
-        // v2p.destructor();
-        // v3p.destructor();
+    public void free() {
+        // ps.free();
+        ff.free();
+        // packages.free();
+        // v2p.free();
+        // v3p.free();
     }
 
     /**
@@ -150,6 +155,8 @@ public final class VPA {
         int i;
         String recordName;  // name of this record element (from the file, without the final '.xml')
         VEOResult res;      // result of processing the VEO
+        JSONParser parser = new JSONParser();
+        JSONObject sm;      // set metadata expressed as JSON
 
         // check parameters
         if (veo == null) {
@@ -165,6 +172,16 @@ public final class VPA {
             throw new AppError("Package directory '" + veoOutputDir.toString() + "' is not a directory (VPA.process())");
         }
 
+        // parse the set metadata into JSON
+        sm = null;
+        if (setMetadata != null) {
+            try {
+                sm = (JSONObject) parser.parse(setMetadata);
+            } catch (ParseException pe) {
+                throw new AppError("Set metadata '" + setMetadata + "' is not valid JSON: " + pe.toString() + " (VPA.process())");
+            }
+        }
+
         // get the record name from the file name minus the file extension ('.veo' or '.zip')
         String s = veo.getFileName().toString();
         if ((i = s.lastIndexOf('.')) != -1) {
@@ -178,6 +195,7 @@ public final class VPA {
 
         // ensure that the set metadata is a straight collection of JSON properties
         // (i.e. strip off any leading '"set": {' or '{', and any trailing '}')
+        /*
         if (setMetadata != null) {
             setMetadata = setMetadata.trim();
             if (setMetadata.startsWith("\"set\"")) {
@@ -193,16 +211,18 @@ public final class VPA {
                 setMetadata = setMetadata.substring(0, setMetadata.length() - "}".length()).trim();
             }
         }
+*/
 
         // process the veo file
         try {
             if (veo.toString().toLowerCase().endsWith(".veo")) {
-                res = v2p.process(setMetadata, veo, recordName, veoOutputDir);
+                res = v2p.process(sm, veo, recordName, veoOutputDir);
             } else if (veo.toString().toLowerCase().endsWith(".zip")) {
-                res = v3p.process(setMetadata, veo, recordName, veoOutputDir);
+                res = v3p.process(sm, veo, recordName, veoOutputDir);
             } else {
                 throw new AppError("Error processing '" + veo.toString() + "' as file must end in '.zip' (V3) or '.veo' (V2)");
             }
+            sm = null;
         } finally {
             System.gc();
         }

@@ -19,19 +19,21 @@ import VERSCommon.XMLParser;
 import VERSCommon.XMLConsumer;
 import VEOAnalysis.VEOAnalysis;
 import VERSCommon.VEOError;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
-import org.xml.sax.*;
+import org.json.simple.JSONObject;
+import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
 
-public class V3Process {
+public final class V3Process {
 
     private final Packages packages;      // Utility class to create the various packages
     private final VEOAnalysis va;         // Analysis package
@@ -91,7 +93,8 @@ public class V3Process {
 
     /**
      * Log Handler to capture Log entries into a StringBuilder. Note that the
-     * calling method passes in the StringBuilder to use.
+     * calling method passes in the StringBuilder to use. This handler is used
+     * to capture the output of the VERS3 processing software.
      */
     private class LogHandler extends Handler {
 
@@ -128,114 +131,94 @@ public class V3Process {
      * @param veo	the file to parse
      * @param recordName the name of the Information Object to be produced
      * @param packageDir directory in which to create the packages
-     * @return a string containing a description of the result of processing the
-     * VEO
+     * @return a VEOResult containing the results of the processing
      * @throws AppFatal if a system error occurred
      * @throws AppError if an unexpected error occurred processing this VEO
      */
-    public VEOResult process(String setMetadata, Path veo, String recordName, Path packageDir) throws AppFatal, AppError {
+    public VEOResult process(JSONObject setMetadata, Path veo, String recordName, Path packageDir) throws AppFatal, AppError {
         ArrayList<Event> events;
         ArrayList<InformationObject> ios;
+        InformationObject io;
+        Event e;
         Path xmlFile;
         String veoPID;
-        VEOResult res;
         Path veoDir;
         int i;
+        Instant started;
+        boolean success;
 
         // check parameters
         if (veo == null) {
-            throw new AppError("V3Process.process: Passed null VEO file to be processed");
+            throw new AppError("V3Process.process(): Passed null VEO file to be processed");
         }
         if (recordName == null) {
-            throw new AppError("V3Process.process: Passed null recordName");
+            throw new AppError("V3Process.process(): Passed null recordName");
+        }
+        if (packageDir == null) {
+            throw new AppError("V3Process.process(): Passed null package directory");
         }
         LOG.log(Level.INFO, "Processing ''{0}''", new Object[]{veo.toAbsolutePath().toString()});
-
-        // result
-        res = new VEOResult(VEOResult.V3_VEO);
-        res.packages = packageDir;
+        started = Instant.now();
 
         // reset log1
         log1.setLength(0);
 
         ios = null;
         events = null;
+        success = true;
         try {
             // unpack & test the VEO
-            veoDir = va.testVEO(veo.toString(), res.packages);
-            res.success = va.isErrorFree();
+            veoDir = va.testVEO(veo.toString(), packageDir);
+            success = va.isErrorFree();
 
-            // parse the VEOHistory.xml file
-            xmlFile = veoDir.resolve("VEOHistory.xml");
-            events = vhp.parse(xmlFile);
-            events.add(Event.Ingest());
-            events.add(Event.CustodyAccepted());
+            // if VEO tested ok, do the rest of the processing...
+            if (success) {
 
-            // parse the VEOContent.xml file
-            xmlFile = veoDir.resolve("VEOContent.xml");
-            ios = vcp.parse(xmlFile, veoDir, veo);
+                // parse the VEOHistory.xml file & add the ingest and custody accepted events
+                xmlFile = veoDir.resolve("VEOHistory.xml");
+                events = vhp.parse(xmlFile);
+                events.add(Event.Ingest());
+                events.add(Event.CustodyAccepted());
 
-            // assign the PIDs
-            veoPID = ps.mint();
-            for (i = 0; i < ios.size(); i++) {
-                ios.get(i).assignPIDs(veoPID);
+                // parse the VEOContent.xml file and get the Record Items (IOs)
+                xmlFile = veoDir.resolve("VEOContent.xml");
+                ios = vcp.parse(xmlFile, veoDir, veo);
+
+                // assign the PIDs to the VEO and the Record Items
+                veoPID = ps.mint();
+                for (i = 0; i < ios.size(); i++) {
+                    ios.get(i).assignPIDs(veoPID);
+                }
+
+                // create AMS, DAS, and SAMS packages
+                packages.createAMSPackage(setMetadata, ios, events);
+                packages.createSAMSPackage(ios);
+                packages.createDASPackage(veo, veoPID);
             }
-
-            // create AMS and SAMS outputs
-            packages.createAMSPackage(setMetadata, ios, events);
-            packages.createSAMSPackage(ios);
-            packages.createDASPackage(veo, veoPID);
         } catch (AppFatal ae) {
-            res.free();
-            free(ios, events);
             throw ae;
         } catch (AppError | VEOError ve) {
-            finishResult(res, false, ve.getMessage());
-            free(ios, events);
-            return res;
-        }
+            log1.append(ve.getMessage());
+            success = false;
+        } finally {
 
-        finishResult(res, true, null);
-        free(ios, events);
-        return res;
-    }
-
-    /**
-     * Finish result
-     */
-    private void finishResult(VEOResult res, boolean success, String desc) {
-        res.success = success;
-        if (desc != null) {
-            log1.append(desc);
-        }
-        res.result = log1.toString();
-        res.timeProcEnded = Instant.now();
-    }
-
-    /**
-     * Free the internally allocated memory
-     *
-     * @param ios
-     */
-    private void free(ArrayList<InformationObject> ios, ArrayList<Event> events) {
-        int i;
-        InformationObject io1;
-        Event e;
-
-        if (ios != null) {
-            for (i = 0; i < ios.size(); i++) {
-                io1 = ios.get(i);
-                io1.free();
+            // free everything
+            if (ios != null) {
+                for (i = 0; i < ios.size(); i++) {
+                    io = ios.get(i);
+                    io.free();
+                }
+                ios.clear();
             }
-            ios = null;
-        }
-        if (events != null) {
-            for (i = 0; i < events.size(); i++) {
-                e = events.get(i);
-                e.free();
+            if (events != null) {
+                for (i = 0; i < events.size(); i++) {
+                    e = events.get(i);
+                    e.free();
+                }
+                events.clear();
             }
-            events = null;
         }
+        return new VEOResult(recordName, VEOResult.V3_VEO, success, log1.toString(), packageDir, started);
     }
 
     /**
@@ -245,8 +228,8 @@ public class V3Process {
     private class VEOHistoryParser implements XMLConsumer {
 
         private final XMLParser parser;
-        private ArrayList<Event> events;        // list of events
-        private Event event;                    // current vers:Event being parsed
+        private ArrayList<Event> events;    // list of events
+        private Event event;                // current vers:Event being parsed
 
         public VEOHistoryParser() throws AppFatal {
             parser = new XMLParser(this);
@@ -263,32 +246,25 @@ public class V3Process {
             events = new ArrayList<>();
             event = null;
 
-            // parse
+            // parse and build list of events
             parser.parse(xmlFile);
-
-            // free everything about processing the VEO document
             return events;
         }
 
         /**
          * SAX Events captured
          */
-        private final static String VEOCONTENTPREFIX = "vers:VEOHistory/";
+        private final static String VEO_HISTORY_PREFIX = "vers:VEOHistory/";
 
         /**
          * Start of element
          *
-         * This event is called when the parser finds a new element. The element
-         * name is pushed onto the stack. The stack keeps the element path from
-         * the root of the parse tree to the current element. We then check this
-         * path to see if the current element matches one of the elementName we
-         * are interested in (the parent and grandparent of this element may be
-         * checked on the stack to check the contex). If they match, we start
-         * recording the element value.
+         * This event is called when the parser finds a new element.
          *
-         * @param eFound
-         * @param attributes
-         * @throws SAXException
+         * @param eFound element path identifying the found element
+         * @param attributes any attributes in the element
+         * @throws SAXException any failure (stop parsing)
+         * @return what to do with the value
          */
         @Override
         public HandleElement startElement(String eFound, Attributes attributes)
@@ -296,8 +272,8 @@ public class V3Process {
             HandleElement wtdwv;
 
             // match a prefix
-            if (eFound.startsWith(VEOCONTENTPREFIX)) {
-                eFound = eFound.substring(VEOCONTENTPREFIX.length());
+            if (eFound.startsWith(VEO_HISTORY_PREFIX)) {
+                eFound = eFound.substring(VEO_HISTORY_PREFIX.length());
             }
 
             // match the path to see if do we do something special?
@@ -311,6 +287,7 @@ public class V3Process {
                 case "vers:Event/vers:EventType":
                 case "vers:Event/vers:Initiator":
                 case "vers:Event/vers:Description":
+                case "vers:Event/vers:Error":
                     wtdwv = new HandleElement(HandleElement.VALUE_TO_STRING);
                     break;
                 default:
@@ -323,21 +300,18 @@ public class V3Process {
         /**
          * End of an element
          *
-         * Found the end of an element. Pop the element from the top of the
-         * stack. If recording, stop, and store the recorded element. If a
-         * vers:FileMetadata or vers:RecordMetadata element has been finished,
-         * throw a SAX XMLParser Error to force the parse to terminate.
+         * Found the end of an element. Process the value if we're interested.
          *
-         * @param eFound
-         * @param value
-         * @throws org.xml.sax.SAXException
+         * @param eFound element path identifying the found element
+         * @param value value of element (null if not captured)
+         * @throws SAXException if processing needs to be terminated
          */
         @Override
         public void endElement(String eFound, String value, String element) throws SAXException {
 
             // match a prefix
-            if (eFound.startsWith(VEOCONTENTPREFIX)) {
-                eFound = eFound.substring(VEOCONTENTPREFIX.length());
+            if (eFound.startsWith(VEO_HISTORY_PREFIX)) {
+                eFound = eFound.substring(VEO_HISTORY_PREFIX.length());
             }
 
             // if recording store element value in appropriate global variable
@@ -352,10 +326,13 @@ public class V3Process {
                     event.eventType = value;
                     break;
                 case "vers:Event/vers:Initiator":
-                    event.initiator = value;
+                    event.initiators.add(value);
                     break;
                 case "vers:Event/vers:Description":
-                    event.description = value;
+                    event.descriptions.add(value);
+                    break;
+                case "vers:Event/vers:Error":
+                    event.errors.add(value);
                     break;
                 default:
                     break;
@@ -371,9 +348,7 @@ public class V3Process {
 
         private final XMLParser parser;
         private Path veoFile;                   // file name of VEO
-        private String id;                      // identifier of this record element
         private Path veoDir;                    // place to put the VEO content
-        private String veoPID;                  // VEO-PID assigned to this VEO
         private ArrayList<InformationObject> ios;  // list of Information Objects
         private InformationObject io;           // current vers:InformationObject being parsed
         private MetadataPackage mp;             // current vers:MetadataPackage being parsed
@@ -381,20 +356,23 @@ public class V3Process {
         private ContentFile cf;                 // current vers:ContentFile being parsed
         private int ipCnt;                      // count of Information Pieces seen in this IO
         private int mpCnt;                      // count of Metadata Packages seen in this IO
-        private int cfCnt;                      // count of Content Files seen in this IP
-        private int seqNo;                      // sequence number of Content Files in this VEO
+        private int cfSeqNoInVEO;               // sequence number of Content Files in this VEO
         private boolean aglsMP;                 // true if found an AGLS metadata package
         private boolean anzs5478MP;             // true if found an ANZS 5478 metadata package
         private String idValue;                 // value of an Identifier in an ANZS 5478 metadata package
         private String idScheme;                // scheme for value of an Identifier in an ANZS 5478 metadata package
-        private String retAndDispAuthority;     // authority that issued RDA
 
         public VEOContentParser() throws AppFatal {
             parser = new XMLParser(this);
+            free();
+        }
+
+        /**
+         * Set up...
+         */
+        private void free() {
             veoFile = null;
-            id = null;
             veoDir = null;
-            veoPID = null;
             ios = null;
             io = null;
             mp = null;
@@ -402,13 +380,11 @@ public class V3Process {
             cf = null;
             ipCnt = 0;
             mpCnt = 0;
-            cfCnt = 0;
-            seqNo = 0;
+            cfSeqNoInVEO = 0;
             aglsMP = false;
             anzs5478MP = false;
             idValue = null;
             idScheme = null;
-            retAndDispAuthority = null;
         }
 
         /**
@@ -423,54 +399,31 @@ public class V3Process {
          */
         private ArrayList<InformationObject> parse(Path xmlFile, Path veoDir, Path veo) throws AppError, AppFatal {
 
-            // set up parse
+            // set up new parse
+            free();
             this.veoFile = veo;
-            id = null;
             this.veoDir = veoDir;
             ios = new ArrayList<>();
-            io = null;
-            mp = null;
-            ip = null;
-            cf = null;
-            ipCnt = 0;
-            mpCnt = 0;
-            cfCnt = 0;
-            seqNo = 0;
-            aglsMP = false;
-            anzs5478MP = false;
-            idValue = null;
-            idScheme = null;
-            retAndDispAuthority = null;
-
-            // assign a VEO-PID to this VEO
-            veoPID = ps.mint();
 
             // parse
             parser.parse(xmlFile);
-
-            // free everything about processing the VEO document
             return ios;
         }
 
         /**
          * SAX Events captured
          */
-        private final static String VEOCONTENTPREFIX = "vers:VEOContent/";
+        private final static String VEO_CONTENT_PREFIX = "vers:VEOContent/";
 
         /**
          * Start of element
          *
-         * This event is called when the parser finds a new element. The element
-         * name is pushed onto the stack. The stack keeps the element path from
-         * the root of the parse tree to the current element. We then check this
-         * path to see if the current element matches one of the elementName we
-         * are interested in (the parent and grandparent of this element may be
-         * checked on the stack to check the contex). If they match, we start
-         * recording the element value.
+         * This event is called when the parser finds a new element.
          *
-         * @param eFound
-         * @param attributes
-         * @throws SAXException
+         * @param eFound element path identifying the found element
+         * @param attributes any attributes in the element
+         * @throws SAXException any failure (stop parsing)
+         * @return what to do with the value
          */
         @Override
         public HandleElement startElement(String eFound, Attributes attributes)
@@ -478,8 +431,8 @@ public class V3Process {
             HandleElement wtdwv;
 
             // match a prefix
-            if (eFound.startsWith(VEOCONTENTPREFIX)) {
-                eFound = eFound.substring(VEOCONTENTPREFIX.length());
+            if (eFound.startsWith(VEO_CONTENT_PREFIX)) {
+                eFound = eFound.substring(VEO_CONTENT_PREFIX.length());
             }
 
             // match the path to see if do we do something special?
@@ -500,6 +453,7 @@ public class V3Process {
                     mpCnt++;
                     mp.id = mpCnt;
                     aglsMP = false;
+                    anzs5478MP = false;
                     wtdwv = new HandleElement(HandleElement.ELEMENT_TO_STRING);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/vers:MetadataSchemaIdentifier":
@@ -531,6 +485,8 @@ public class V3Process {
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:isVersionOf":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:replaces":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:requires":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/versterms:disposalReference":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/versterms:disposal-Reference": // oddity in standard
                     if (aglsMP) {
                         wtdwv = new HandleElement(HandleElement.VALUE_TO_STRING);
                     } else {
@@ -538,8 +494,10 @@ public class V3Process {
                     }
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Identifier":
-                    idValue = null;
-                    idScheme = null;
+                    if (anzs5478MP) {
+                        idValue = null;
+                        idScheme = null;
+                    }
                     wtdwv = null;
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Identifier/anzs5478:IdentifierString":
@@ -563,7 +521,6 @@ public class V3Process {
                     ip = io.addInformationPiece();
                     ipCnt++;
                     ip.seqNbr = ipCnt;
-                    cfCnt = 0;
                     wtdwv = null;
                     break;
                 case "vers:InformationObject/vers:InformationPiece/vers:Label":
@@ -571,8 +528,8 @@ public class V3Process {
                     break;
                 case "vers:InformationObject/vers:InformationPiece/vers:ContentFile":
                     cf = ip.addContentFile();
-                    cfCnt++;
-                    cf.seqNbr = cfCnt;
+                    cf.seqNbr = cfSeqNoInVEO;
+                    cfSeqNoInVEO++;
                     wtdwv = null;
                     break;
                 case "vers:InformationObject/vers:InformationPiece/vers:ContentFile/vers:PathName":
@@ -588,14 +545,11 @@ public class V3Process {
         /**
          * End of an element
          *
-         * Found the end of an element. Pop the element from the top of the
-         * stack. If recording, stop, and store the recorded element. If a
-         * vers:FileMetadata or vers:RecordMetadata element has been finished,
-         * throw a SAX XMLParser Error to force the parse to terminate.
+         * Found the end of an element. Process the value if we're interested.
          *
-         * @param eFound
-         * @param value
-         * @throws org.xml.sax.SAXException
+         * @param eFound element path identifying the found element
+         * @param value value of element (null if not captured)
+         * @throws SAXException if processing needs to be terminated
          */
         @Override
         public void endElement(String eFound, String value, String element) throws SAXException {
@@ -604,15 +558,13 @@ public class V3Process {
             InformationObject parent;
 
             // match a prefix
-            if (eFound.startsWith(VEOCONTENTPREFIX)) {
-                eFound = eFound.substring(VEOCONTENTPREFIX.length());
+            if (eFound.startsWith(VEO_CONTENT_PREFIX)) {
+                eFound = eFound.substring(VEO_CONTENT_PREFIX.length());
             }
 
             // if recording store element value in appropriate global variable
             switch (eFound) {
                 case "vers:InformationObject":
-                    // io.xmlContent = out.toString();
-                    // make link between ios
                     break;
                 case "vers:InformationObject/vers:InformationObjectType":
                     io.label = value;
@@ -648,7 +600,7 @@ public class V3Process {
                     if (value.equals("http://prov.vic.gov.au/vers/schema/AGLS")) {
                         aglsMP = true;
                     }
-                    if (value.equals("http://www.vic.gov.au/blog/wp-content/uploads/2013/11/AGLS-Victoria-2011-V4-Final-2011.pdf")) {
+                    if (value.equals("http://prov.vic.gov.au/vers/schema/ANZS5478")) {
                         anzs5478MP = true;
                     }
                     break;
@@ -689,7 +641,7 @@ public class V3Process {
                     io.dates.add(new Date("DateValid", value));
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:title":
-                    io.title = value;
+                    io.titles.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:description":
                     io.descriptions.add(value);
@@ -739,6 +691,10 @@ public class V3Process {
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:requires":
                     addAGLSRelation("requires", value);
                     break;
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/versterms:disposalReference":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/versterms:disposal-Reference": // oddity in standard
+                    io.disposalAuthority.rdas.add(value);
+                    break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Identifier/anzs5478:IdentifierString":
                     idValue = value;
                     break;
@@ -751,7 +707,7 @@ public class V3Process {
                     idScheme = null;
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Name/anzs5478:NameWords":
-                    io.title = value;
+                    io.titles.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:DateRange/anzs5478:StartDate":
                     // could have multiple dates, choose first dateCreated found unless we find a longer
@@ -774,18 +730,18 @@ public class V3Process {
                     io.spatialCoverage.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Disposal/anzs5478:RetentionAndDisposalAuthority":
-                    retAndDispAuthority = value;
+                    io.disposalAuthority.rdas.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Disposal/anzs5478:DisposalClass":
-                    io.disposalAuthorisations.add("{ \"authority\": \"" + retAndDispAuthority + "\", \"disposalClass\": \"" + value + "\"}");
-                    retAndDispAuthority = null;
+                    io.disposalAuthority.disposalClass = value;
                     break;
                 case "vers:InformationObject/vers:InformationPiece/vers:Label":
                     ip.label = value;
                     break;
                 case "vers:InformationObject/vers:InformationPiece/vers:ContentFile/vers:PathName":
                     String safe = value.replaceAll("\\\\", "/");
-                    cf.fileLocation = veoDir.resolve(safe);
+                    cf.fileLocation = Paths.get(safe);
+                    cf.rootFileLocn = veoDir;
                     s = cf.fileLocation.getFileName().toString();
                     i = s.lastIndexOf(".");
                     if (i == -1) {
@@ -794,12 +750,10 @@ public class V3Process {
                         cf.fileExt = s.substring(i);
                     }
                     cf.sourceFileName = value;
-                    cf.seqNbr = seqNo;
-                    seqNo++;
 
                     // get file size
                     try {
-                        cf.fileSize = Files.size(cf.fileLocation);
+                        cf.fileSize = Files.size(cf.rootFileLocn);
                     } catch (IOException ioe) {
                         LOG.log(Level.INFO, "V2Process.V2VEOParser.endElement(): failed getting size of file: ", ioe.getMessage());
                         cf.fileSize = 0;
@@ -819,6 +773,9 @@ public class V3Process {
         private void addAGLSRelation(String type, String target) {
             int i, j;
             Relationship r;
+            Identifier newId;
+
+            newId = new Identifier(target, null);
 
             // search to see if this relationship type has already been seen
             // if so, add the target to that relationship
@@ -826,7 +783,7 @@ public class V3Process {
                 r = io.relations.get(i);
                 for (j = 0; j < r.types.size(); j++) {
                     if (r.types.get(j).equals(type)) {
-                        r.targetIds.add(target);
+                        r.targetIds.add(newId);
                         break;
                     }
                 }
@@ -837,7 +794,7 @@ public class V3Process {
 
             // doesn't already exist, so add a new relationship
             if (i == io.relations.size()) {
-                io.relations.add(new Relationship(type, target, null));
+                io.relations.add(new Relationship(type, newId, null));
             }
         }
     }

@@ -7,36 +7,38 @@
 package VPA;
 
 import VERSCommon.AppFatal;
-import VERSCommon.VEOFatal;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 
 /**
- * This class maps from file extensions to MIME types. The mapping is obtained
- * from the 'mime.types.txt' file from apache. This file is located in the
- * VPA support directory.
+ * This class maps between file extensions and MIME types. The mappings are
+ * obtained from the 'mime.types.txt' file from apache. This file is located in
+ * the VPA support directory. Note that in mapping from a MIME type to a file
+ * extension, the first file extension given is used.
  */
 public final class FileFormat {
 
     HashMap<String, String> toMimeType;
+    HashMap<String, String> fromMimeType;
 
     public FileFormat(Path supportDir) throws AppFatal {
         toMimeType = new HashMap<>();
+        fromMimeType = new HashMap<>();
         readFormatFile(supportDir);
     }
-    
+
     /**
      * Free the data associated with this instance
      */
-    public void destructor() {
+    public void free() {
         toMimeType.clear();
         toMimeType = null;
+        fromMimeType.clear();
+        fromMimeType = null;
     }
 
     /**
@@ -45,7 +47,8 @@ public final class FileFormat {
      * and should be periodically reloaded. The file contains a sequence of
      * lines, each consisting of a mime type followed by a tab and then a set of
      * file extensions (if known). Each file extension is separated by a space.
-     * Lines starting with '#' are comments and are ignored.
+     * File extensions do not have a leading '.'. Lines starting with '#' are
+     * comments and are ignored.
      *
      * @param supportDir the directory in which the file is to be found
      * @throws AppFatal if the file could not be read
@@ -72,15 +75,15 @@ public final class FileFormat {
             // go through mime.types.txt line by line
             while ((s = br.readLine()) != null) {
                 s = s.trim();
-                
+
                 // ignore lines that do begin with a '#' - these are comment lines - and empty lines
                 if (s.length() == 0 || s.charAt(0) == '#') {
                     continue;
                 }
-                
+
                 // split line at tabs
                 tokens = s.split("\t");
-                
+
                 // ignore lines with a null or empty MIME type
                 if (tokens[0] != null) {
                     mimeType = tokens[0].trim();
@@ -90,18 +93,27 @@ public final class FileFormat {
                 } else {
                     continue;
                 }
-                
+
                 // get list of file extensions associated with MIME type
                 for (i = 1; i < tokens.length; i++) {
                     if (tokens[i] != null) {
                         fileExt = tokens[i].trim().split(" ");
+                        if (fileExt.length > 0) {
+                            fromMimeType.put(mimeType.toLowerCase(), fileExt[0].toLowerCase());
+                        }
                         for (j = 0; j < fileExt.length; j++) {
                             if (fileExt[j] == null || fileExt[j].equals("") || fileExt.equals(" ")) {
                                 continue;
                             }
                             toMimeType.put(fileExt[j].toLowerCase(), mimeType.toLowerCase());
                         }
+                        for (j = 0; j < fileExt.length; j++) {
+                            fileExt[j] = null;
+                        }
                     }
+                }
+                for (i = 0; i < tokens.length; i++) {
+                    tokens[i] = null;
                 }
             }
         } catch (FileNotFoundException e) {
@@ -144,5 +156,20 @@ public final class FileFormat {
             s = "application/octet";
         }
         return s;
+    }
+
+    /**
+     * Translate from a Mime type to a file extension. It is passed a MIME type
+     * and returns a file extension (without the leading '.'). If passed null or
+     * an unrecognised MIME type, it returns null.
+     *
+     * @param mimeType a String containing the MIME type
+     * @return a String containing the matching file extension
+     */
+    public String mimeType2FileExt(String mimeType) {
+        if (mimeType == null) {
+            return null;
+        }
+        return fromMimeType.get(mimeType.toLowerCase());
     }
 }

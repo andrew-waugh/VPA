@@ -8,43 +8,55 @@ package VPA;
 
 import VERSCommon.AppFatal;
 import java.util.ArrayList;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 /**
- * Represents an Information Object from a VEO
+ * Represents an Information Object extracted from a VEO. A V2 VEO creates one
+ * Information Object (a file or record), while a V3 VEO creates an Information
+ * Object from every IO in the VEO. Each information object represents a Record
+ * Item in the AMS.
  */
-public class InformationObject {
+public final class InformationObject {
 
-    private PIDService ps;      // service to allocate PIDs
-    public String veoVersion;   // version of the VEO
-    public String veoFileName;  // file name of the VEO
-    public String v2VeoType;    // if V2 VEO, is it a File or Record VEO
-    public String veoPID;       // PID for the VEO that contained the IO
-    public String v2VEOId;      // if V2 VEO, the identifier
-    public int seqNo;           // sequence number of this IO within the VEO
-    public int depth;           // depth of this Information Object in VEO
-    public InformationObject parent; // parent IO
-    public ArrayList<InformationObject> children;  // child IOs
-    public String ioPID;        // PID for this IO
-    public String title;        // title (may be the same as label)
-    public String label;        // label associated with the IO
-    public ArrayList<Identifier> ids; // list of identifiers associated with this IO
-    public String dateCreated;  // date item created (null if unknown)
-    public String dateRegistered; // date item was registered (null if unknown)
-    public ArrayList<Date> dates; // a list of dates in the VEOs
-    public ArrayList<String> descriptions; // descriptions from VEO
-    public ArrayList<Relationship> relations; // links to other IOs
-    public ArrayList<String> jurisdictionalCoverage;    // list of jurisdictional coverage metadata
-    public ArrayList<String> spatialCoverage; // list of spatial coverage metadata
-    public ArrayList<String> disposalAuthorisations; // list of disposal authorisations
-    public ArrayList<InformationPiece> infoPieces; // information pieces
-    public ArrayList<MetadataPackage> metaPackages; // metadata packages
+    private final PIDService ps;      // service to allocate PIDs
+    String veoVersion;   // version of the VEO
+    String veoFileName;  // file name of the VEO
+    String v2VeoType;    // if V2 VEO, is it a File or Record VEO
+    String veoPID;       // PID for the VEO that contained the IO
+    String v2VEOId;      // if V2 VEO, the identifier
+    int seqNo;           // sequence number of this IO within the VEO
+    int depth;           // depth of this Information Object in VEO
+    InformationObject parent; // parent IO
+    ArrayList<InformationObject> children;  // child IOs
+    String ioPID;        // PID for this IO
+    ArrayList<String> titles; // titles (may be the same as label)
+    String label;        // label associated with the IO
+    ArrayList<Identifier> ids; // list of identifiers associated with this IO
+    String dateCreated;  // date item created (null if unknown)
+    String dateRegistered; // date item was registered (null if unknown)
+    ArrayList<Date> dates; // a list of dates in the VEOs
+    ArrayList<String> descriptions; // descriptions from VEO
+    ArrayList<Relationship> relations; // links to other IOs
+    ArrayList<String> jurisdictionalCoverage;    // list of jurisdictional coverage metadata
+    ArrayList<String> spatialCoverage; // list of spatial coverage metadata
+    Disposal disposalAuthority; // disposal authorisations
+    ArrayList<InformationPiece> infoPieces; // information pieces
+    ArrayList<MetadataPackage> metaPackages; // metadata packages
 
+    /**
+     * Constructor
+     *
+     * @param ps persistent identifier service
+     * @param seqNo sequence number of this IO within the VEO
+     */
     public InformationObject(PIDService ps, int seqNo) {
         free();
         this.seqNo = seqNo;
         this.ps = ps;
 
         children = new ArrayList<>();
+        titles = new ArrayList<>();
         ids = new ArrayList<>();
         dates = new ArrayList<>();
         descriptions = new ArrayList<>();
@@ -52,8 +64,8 @@ public class InformationObject {
         metaPackages = new ArrayList<>();
         jurisdictionalCoverage = new ArrayList<>();
         spatialCoverage = new ArrayList<>();
-        disposalAuthorisations = new ArrayList<>();
         infoPieces = new ArrayList<>();
+        disposalAuthority = new Disposal();
     }
 
     /**
@@ -76,9 +88,14 @@ public class InformationObject {
             for (i = 0; i < children.size(); i++) {
                 children.get(i).free();
             }
+            children.clear();
+            children = null;
         }
         ioPID = null;
-        title = null;
+        if (titles != null) {
+            titles.clear();
+            titles = null;
+        }
         label = null;
         if (ids != null) {
             for (i = 0; i < ids.size(); i++) {
@@ -131,12 +148,8 @@ public class InformationObject {
             spatialCoverage.clear();
             spatialCoverage = null;
         }
-        if (disposalAuthorisations != null) {
-            for (i = 0; i < disposalAuthorisations.size(); i++) {
-                disposalAuthorisations.set(i, null);
-            }
-            disposalAuthorisations.clear();
-            disposalAuthorisations = null;
+        if (disposalAuthority != null) {
+            disposalAuthority.free();
         }
         if (infoPieces != null) {
             for (i = 0; i < infoPieces.size(); i++) {
@@ -161,7 +174,16 @@ public class InformationObject {
     }
 
     /**
-     * Create a new Information Piece and return it
+     * Add a new identifier to the IO
+     *
+     * @param id the identifier
+     */
+    public void addIdentifier(Identifier id) {
+        ids.add(id);
+    }
+
+    /**
+     * Add a new Information Piece to the IO and return it
      *
      * @return the new Information Piece
      */
@@ -174,9 +196,9 @@ public class InformationObject {
     }
 
     /**
-     * Create a new Information Piece and return it
+     * Add a new Metadata Package to the IO and return it
      *
-     * @return the new Information Piece
+     * @return the new metadata package
      */
     public MetadataPackage addMetadataPackage() {
         MetadataPackage mp;
@@ -198,13 +220,13 @@ public class InformationObject {
     }
 
     /**
-     * Represent the IO as JSON
+     * Represent the IO as a string
      *
      * @return a string representing the IO
      */
-    public String toJSON() {
+    public String toString() {
         StringBuilder sb = new StringBuilder();
-        int i, j;
+        int i;
 
         sb.append("{\n");
         sb.append("  \"veoFileName\":\"" + Json.safe(veoFileName) + "\",\n");
@@ -232,8 +254,15 @@ public class InformationObject {
             }
             sb.append("],\n");
         }
-        if (title != null) {
-            sb.append("  \"title\":\"" + Json.safe(title) + "\",\n");
+        if (titles.size() > 0) {
+            sb.append("  \"titles\":[\n");
+            for (i = 0; i < titles.size(); i++) {
+                sb.append("    " + Json.safe(titles.get(i)));
+                if (i < titles.size() - 1) {
+                    sb.append(",\n");
+                }
+            }
+            sb.append("],\n");
         }
         if (label != null) {
             sb.append("  \"label\":\"" + Json.safe(label) + "\",\n");
@@ -241,9 +270,9 @@ public class InformationObject {
         if (ids.size() > 0) {
             sb.append("  \"identifiers\":[\n");
             for (i = 0; i < ids.size(); i++) {
-                String s = ids.get(i).idString;
+                String s = ids.get(i).itemId;
                 if (!s.startsWith("{")) {
-                    s = "\""+s+"\"";
+                    s = "\"" + s + "\"";
                 }
                 sb.append("    {\"identifier\":{\"value\":" + s + ", \"scheme\":\"" + ids.get(i).idScheme + "\"}}");
                 if (i < ids.size() - 1) {
@@ -261,7 +290,7 @@ public class InformationObject {
         if (dates.size() > 0) {
             sb.append("  \"dates\":[\n");
             for (i = 0; i < dates.size(); i++) {
-                sb.append("    "+dates.get(i).toJSON());
+                sb.append("    " + dates.get(i).toString());
                 if (i < dates.size() - 1) {
                     sb.append(",\n");
                 }
@@ -282,7 +311,7 @@ public class InformationObject {
             sb.append("  \"relationships\":[\n");
             for (i = 0; i < relations.size(); i++) {
                 sb.append("    {\"relation\":");
-                sb.append(relations.get(i).toJSON());
+                sb.append(relations.get(i).toString());
                 if (i < relations.size() - 1) {
                     sb.append(",\n");
                 }
@@ -309,20 +338,11 @@ public class InformationObject {
             }
             sb.append("],\n");
         }
-        if (disposalAuthorisations.size() > 0) {
-            sb.append("  \"disposalAuthorisation\":[\n");
-            for (i = 0; i < disposalAuthorisations.size(); i++) {
-                sb.append("    {\"mandate\":\"" + Json.safe(disposalAuthorisations.get(i)) + "\"}");
-                if (i < disposalAuthorisations.size() - 1) {
-                    sb.append(",\n");
-                }
-            }
-            sb.append("],\n");
-        }
+        sb.append(disposalAuthority.toString());
         if (metaPackages.size() > 0) {
-            sb.append("  \"metaPackages\":[\n");
+            sb.append("  \"metadataPackages\":[\n");
             for (i = 0; i < metaPackages.size(); i++) {
-                sb.append(metaPackages.get(i).toJSON());
+                sb.append(metaPackages.get(i).toString());
                 if (i < metaPackages.size() - 1) {
                     sb.append(",\n");
                 }
@@ -332,7 +352,7 @@ public class InformationObject {
         if (infoPieces.size() > 0) {
             sb.append("  \"infoPieces\":[\n");
             for (i = 0; i < infoPieces.size(); i++) {
-                sb.append(infoPieces.get(i).toJSON());
+                sb.append(infoPieces.get(i).toString());
                 if (i < infoPieces.size() - 1) {
                     sb.append(",\n");
                 }
@@ -348,36 +368,130 @@ public class InformationObject {
     }
 
     /**
-     * This private class encapsulates the information associated with an
-     * Identifier
+     * Represent the IO as JSON
+     *
+     * @return a JSONObject representing the IO
      */
-    private class Identifier {
+    public JSONObject toJSON() {
+        JSONObject j1, j2, j3;
+        JSONArray ja;
+        int i;
 
-        public String idString; // the actual identifier
-        public String idScheme; // the scheme that allocated the identifier
-
-        public Identifier(String idString, String idScheme) {
-            this.idString = idString;
-            if (idScheme == null) {
-                this.idScheme = "Unknown";
-            } else {
-                this.idScheme = idScheme;
+        j1 = new JSONObject();
+        j1.put("veoFileName", veoFileName);
+        j2 = new JSONObject();
+        j1.put("veoPID", j2);
+        j2.put("scheme", "handle");
+        j2.put("value", veoPID);
+        j1.put("veoVersion", veoVersion);
+        if (v2VeoType != null) {
+            j1.put("v2VeoType", v2VeoType);
+        }
+        if (v2VEOId != null) {
+            j1.put("v2VeoId", v2VEOId);
+        }
+        if (parent != null) {
+            j1.put("parent", parent.ioPID);
+        }
+        j2 = new JSONObject();
+        j1.put("ioPID", j2);
+        j2.put("scheme", "handle");
+        j2.put("value", ioPID);
+        j1.put("ioSeqNo", seqNo);
+        j1.put("ioDepth", depth);
+        if (children.size() > 0) {
+            ja = new JSONArray();
+            j1.put("children", ja);
+            for (i = 0; i < children.size(); i++) {
+                j2 = new JSONObject();
+                j3 = new JSONObject();
+                j3.put("scheme", "handle");
+                j3.put("value", children.get(i).ioPID);
+                j2.put("child", j3);
+                ja.add(j2);
             }
         }
-
-        public void free() {
-            idString = null;
-            idScheme = null;
+        if (titles.size() > 0) {
+            ja = new JSONArray();
+            j1.put("titles", ja);
+            for (i = 0; i < titles.size(); i++) {
+                j2 = new JSONObject();
+                j2.put("title", titles.get(i));
+                ja.add(j2);
+            }
         }
-
-        public String toJSON() {
-            StringBuilder sb = new StringBuilder();
-
-            sb.append("{");
-            sb.append("\"value\":\"" + Json.safe(idString) + "\", ");
-            sb.append("\"scheme\":\"" + Json.safe(idScheme) + "\"");
-            sb.append("}");
-            return sb.toString();
+        if (label != null) {
+            j1.put("label", label);
         }
+        if (ids.size() > 0) {
+            ja = new JSONArray();
+            j1.put("identifiers", ja);
+            for (i = 0; i < ids.size(); i++) {
+                ja.add(ids.get(i).toJSON());
+            }
+        }
+        if (dateCreated != null) {
+            j1.put("dateCreated", dateCreated);
+        }
+        if (dateRegistered != null) {
+            j1.put("dateRegistered", dateRegistered);
+        }
+        if (dates.size() > 0) {
+            ja = new JSONArray();
+            j1.put("dates", ja);
+            for (i = 0; i < dates.size(); i++) {
+                ja.add(dates.get(i).toJSON());
+            }
+        }
+        if (descriptions.size() > 0) {
+            ja = new JSONArray();
+            j1.put("descriptions", ja);
+            for (i = 0; i < descriptions.size(); i++) {
+                j2 = new JSONObject();
+                j2.put("description", descriptions.get(i));
+                ja.add(j2);
+            }
+        }
+        if (relations.size() > 0) {
+            ja = new JSONArray();
+            j1.put("relationships", ja);
+            for (i = 0; i < relations.size(); i++) {
+                ja.add(relations.get(i).toJSON());
+            }
+        }
+        if (jurisdictionalCoverage.size() > 0) {
+            ja = new JSONArray();
+            j1.put("jurisdictionalCoverage", ja);
+            for (i = 0; i < jurisdictionalCoverage.size(); i++) {
+                j2 = new JSONObject();
+                j2.put("jurisdiction", jurisdictionalCoverage.get(i));
+                ja.add(j2);
+            }
+        }
+        if (spatialCoverage.size() > 0) {
+            ja = new JSONArray();
+            j1.put("spatialCoverage", ja);
+            for (i = 0; i < spatialCoverage.size(); i++) {
+                j2 = new JSONObject();
+                j2.put("place", spatialCoverage.get(i));
+                ja.add(j2);
+            }
+        }
+        j1.put("disposalAuthority", disposalAuthority.toJSON());
+        if (metaPackages.size() > 0) {
+            ja = new JSONArray();
+            j1.put("metadataPackages", ja);
+            for (i = 0; i < metaPackages.size(); i++) {
+                ja.add(metaPackages.get(i).toJSON());
+            }
+        }
+        if (infoPieces.size() > 0) {
+            ja = new JSONArray();
+            j1.put("infoPieces", ja);
+            for (i = 0; i < infoPieces.size(); i++) {
+                ja.add(infoPieces.get(i).toJSON());
+            }
+        }
+        return j1;
     }
 }

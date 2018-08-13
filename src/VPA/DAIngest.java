@@ -113,7 +113,7 @@ public class DAIngest {
         useRealHandleService = false;
         r = Runtime.getRuntime();
 
-        setMetadata = " \"set\": {\"ingestSetId\":\"12345\", \"agency\":\"3455\", \"series\":\"421\", \"consignment\":\"P0\", \"accessStatus\":\"open\"}";
+        setMetadata = " {\"ingestSetId\":\"12345\", \"agency\":\"3455\", \"series\":\"421\", \"consignment\":\"P0\", \"accessStatus\":\"open\"}";
 
         // process command line arguments
         configure(args);

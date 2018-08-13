@@ -5,18 +5,21 @@
  */
 package VPA;
 
+import org.json.simple.JSONObject;
+
 /**
- * An instance of this class represents a date found in a VEO. VEOs can have
- * a large number of dates; this allows all the dates to be given to the AMS
- * where they can be analysed
- * @author Andrew
+ * An instance of this class represents a date found in a VEO. VEOs can have a
+ * large number of dates; this allows all the dates to be given to the AMS where
+ * they can be analysed.
  */
-public class Date {
-    String type;    // type of date
-    String value;   // the actual date
-    
+public final class Date {
+
+    public String type;    // type of date
+    public String value;   // the actual date
+
     /**
      * Default constructor
+     *
      * @param type the type of date represented
      * @param value the actual date
      */
@@ -24,7 +27,7 @@ public class Date {
         this.type = type;
         this.value = value;
     }
-    
+
     /**
      * Free the memory associated with a date
      */
@@ -32,17 +35,35 @@ public class Date {
         type = null;
         value = null;
     }
+
+    /**
+     * Return this date as a string. The date will only be returned if
+     * both type and value are not null, otherwise a blank string will be
+     * returned
+     *
+     * @return a string containing a JSON type/value pair
+     */
+    @Override
+    public String toString() {
+        if (type == null || value == null) {
+            return "";
+        }
+        return "{\"" + Json.safe(type) + "\":\"" + Json.safe(value) + "\"}";
+    }
     
     /**
      * Return this date as a JSON instance. The date will only be returned if
      * both type and value are not null, otherwise a blank string will be
      * returned
+     *
      * @return a string containing a JSON type/value pair
      */
-    public String toJSON() {
+    public JSONObject toJSON() {
+        JSONObject j = new JSONObject();
         if (type == null || value == null) {
-            return "";
+            return null;
         }
-        return "{\"" + Json.safe(type) + "\":\""+ Json.safe(value) + "\"}";
+        j.put(type, value);
+        return j;
     }
 }

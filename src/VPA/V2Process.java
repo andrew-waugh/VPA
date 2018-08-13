@@ -26,8 +26,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.StringWriter;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,6 +35,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.json.simple.JSONObject;
 import org.xml.sax.*;
 
 public class V2Process {
@@ -45,9 +45,10 @@ public class V2Process {
     private final V2VEOParser parser;     // parser to process the .veo (XML) file
     private final PIDService ps;          // Class to encapsulate the PID service
     private final String rdfIdPrefix;     // prefix to be used to generate RDF identifiers
+    private final FileFormat ff;          // mappings between Mime types and file formats
     private String veoFormatDesc;         // VEO Format Description from currently parsed VEO
     private String version;               // version from currently parsed VEO
-    private final ArrayList<String> sigBlock;   // signature blocks from currently parsed VEO
+    private final ArrayList<String> sigBlock; // signature blocks from currently parsed VEO
     private final ArrayList<String> lockSigBlock; // lock signature blocks from currently parsed VEO
     private String signedObject;          // signedObject from currently parsed VEO
 
@@ -57,16 +58,18 @@ public class V2Process {
      * Constructor. Set up for processing V2 VEOs
      *
      * @param ps the encapsulation of the PID service
+     * @param ff mapping between MIME types and file formats
      * @param rdfIdPrefix RDF ID prefix to be used in generating RDF
      * @param supportDir directory where the versV2.dtd file is located
      * @param packages methods that generate the packages
      * @param logLevel logging level (INFO = verbose, FINE = debug)
      * @throws AppFatal if a fatal error occurred
      */
-    public V2Process(PIDService ps, String rdfIdPrefix, Path supportDir, Packages packages, Level logLevel) throws AppFatal {
+    public V2Process(PIDService ps, FileFormat ff, String rdfIdPrefix, Path supportDir, Packages packages, Level logLevel) throws AppFatal {
         Path dtd;
 
         LOG.setLevel(null);
+        this.ff = ff;
         this.ps = ps;
         this.rdfIdPrefix = rdfIdPrefix;
         this.packages = packages;
@@ -86,27 +89,6 @@ public class V2Process {
     }
 
     /**
-     * Free all memory allocated in processing VEO.
-     */
-    private void free(ArrayList<InformationObject> ios, ArrayList<Event> events) {
-        int i;
-
-        for (i = 0; i < ios.size(); i++) {
-            ios.get(i).free();
-        }
-        ios = null;
-        for (i = 0; i < events.size(); i++) {
-            events.get(i).free();
-        }
-        events = null;
-        veoFormatDesc = null;
-        version = null;
-        sigBlock.clear();
-        lockSigBlock.clear();
-        signedObject = null;
-    }
-
-    /**
      * Process a V2 VEO. This involves 1) parsing the VEO (an XML file), 2)
      * validating it, 3) extracting the binary files from the VEO, 4) building
      * packages of information for the DAS, AMS, and SAMS.
@@ -117,7 +99,7 @@ public class V2Process {
      * passed a null path to process). For any other issues, a VEOResult will be
      * returned containing details about the results of the processing.
      *
-     * @param setMetadata metadata about the set as a whole
+     * @param setMetadata metadata about the set as a whole (may be null)
      * @param veo	the file to parse
      * @param recordName the name of the Information Object to be produced
      * @param packageDir the directory where the VEO is to be processed
@@ -125,31 +107,33 @@ public class V2Process {
      * @throws AppFatal if a system error occurred
      * @throws AppError processing failed, but further VEOs can be submitted
      */
-    public VEOResult process(String setMetadata, Path veo, String recordName, Path packageDir) throws AppFatal, AppError {
-        StringWriter out;
-        ArrayList<InformationObject> ios;
-        VEOResult res;
-        InformationObject io;   // current information object
-        ArrayList<Event> events; // list of events read
-        String veoPID;          // PID assigned to VEO
+    public VEOResult process(JSONObject setMetadata, Path veo, String recordName, Path packageDir) throws AppFatal, AppError {
+        StringWriter out;           // writer to capture abbreviated VEO
+        ArrayList<InformationObject> ios; // IOs read from VEO
+        InformationObject io;       // current information object
+        ArrayList<Event> events;    // list of events read
+        String veoPID;              // PID assigned to VEO
+        Instant started;            // instant processing started
         int i;
+        Path p;
 
-        // check parameters
-        if (veo == null) {
-            throw new AppError("V2Process.process: Passed null VEO file to be processed");
-        }
+        // check parameters (veo and packageDir checked for null in VPA)
         if (recordName == null) {
-            throw new AppError("V2Process.process: Passed null recordName");
+            throw new AppError("V2Process.process(): Passed null recordName");
         }
+        started = Instant.now();
         LOG.log(Level.INFO, "Processing ''{0}''", new Object[]{veo.toAbsolutePath().toString()});
 
-        res = new VEOResult(VEOResult.V2_VEO);
-        res.packages = packageDir;
+        // create a subdirectory to hold all the document data from the VEO
+        try {
+            Files.createDirectory(packageDir.resolve("docdata"));
+        } catch (IOException ioe) {
+            throw new AppError("V2Process.process: Failed to create directory: " + packageDir.resolve("docdata") + ": " + ioe.getMessage());
+        }
 
         // construct blank Information Object
         ios = new ArrayList<>();
         events = new ArrayList<>();
-
         try {
             io = new InformationObject(ps, 0);
             ios.add(io);
@@ -166,7 +150,7 @@ public class V2Process {
 
             // create abbreviated VEO, and validate it
             out = new StringWriter();
-            Path p = Paths.get(packageDir.toString(), "abreviatedVEO.xml");
+            p = Paths.get(packageDir.toString(), "abreviatedVEO.xml");
             createAbbrVEO(p);
             veoc.vpaTestVEO(veo, p, out);
 
@@ -193,43 +177,29 @@ public class V2Process {
             }
 
             // create AMS and SAMS outputs
-            // packages.createValidationPackage(io, Paths.get(veoDir.toString(), "veo.xml"));
             packages.createAMSPackage(setMetadata, ios, events);
             packages.createSAMSPackage(ios);
             packages.createDASPackage(veo, veoPID);
-
-            // validate VEO
         } catch (AppFatal af) {
-            out = null;
-            res.free();
-            veoPID = null;
-            io = null;
-            free(ios, events);
             throw af;
         } catch (VEOError | AppError e) {
-            out = null;
-            finishResult(res, false, e.getMessage());
-            veoPID = null;
-            io = null;
-            free(ios, events);
-            return res;
+            return new VEOResult(recordName, VEOResult.V2_VEO, false, e.getMessage(), null, started);
+        } finally {
+            for (i = 0; i < ios.size(); i++) {
+                ios.get(i).free();
+            }
+            ios.clear();
+            for (i = 0; i < events.size(); i++) {
+                events.get(i).free();
+            }
+            events.clear();
+            veoFormatDesc = null;
+            version = null;
+            sigBlock.clear();
+            lockSigBlock.clear();
+            signedObject = null;
         }
-
-        finishResult(res, true, out.toString());
-        out = null;
-        veoPID = null;
-        io = null;
-        free(ios, events);
-        return res;
-    }
-
-    /**
-     * Finish result
-     */
-    private void finishResult(VEOResult res, boolean success, String desc) {
-        res.success = success;
-        res.result = desc;
-        res.timeProcEnded = Instant.now();
+        return new VEOResult(recordName, VEOResult.V2_VEO, true, out.toString(), packageDir, started);
     }
 
     /**
@@ -240,7 +210,7 @@ public class V2Process {
      * @param p
      * @throws AppError
      */
-    public void createAbbrVEO(Path p) throws AppError {
+    public void createAbbrVEO(Path p) throws AppError, AppFatal {
         FileOutputStream fos;
         BufferedOutputStream bos;
         OutputStreamWriter osw;
@@ -250,11 +220,12 @@ public class V2Process {
         try {
             fos = new FileOutputStream(p.toFile());
         } catch (FileNotFoundException fnfe) {
-            throw new AppError("Packages.createValidationPackage(): Couldn't create abbreviated VEO file as: " + fnfe.getMessage());
+            throw new AppError("Couldn't create abbreviated VEO file as: " + fnfe.getMessage() + " (V2Process.createAbbrVEO())");
         }
         bos = new BufferedOutputStream(fos);
-        osw = new OutputStreamWriter(bos);
+        osw = null;
         try {
+            osw = new OutputStreamWriter(bos, "UTF-8");
             osw.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n");
             osw.write("<!DOCTYPE vers:VERSEncapsulatedObject SYSTEM \"vers.dtd\">\n");
             osw.write("<vers:VERSEncapsulatedObject\n");
@@ -281,11 +252,15 @@ public class V2Process {
                 osw.write("\n");
             }
             osw.write("</vers:VERSEncapsulatedObject>");
+        } catch (UnsupportedEncodingException uee) {
+            throw new AppFatal("Panic: " + uee.getMessage() + " (V2Process.createdAbbrVEO())");
         } catch (IOException ioe) {
-            throw new AppError("Packages.createValidationPackage(): Failed writing to the abbreviated VEO file as: " + ioe.getMessage());
+            throw new AppError("Failed writing to the abbreviated VEO file as: " + ioe.getMessage() + " (V2Process.createAbbrVEO())");
         } finally {
             try {
-                osw.close();
+                if (osw != null) {
+                    osw.close();
+                }
             } catch (IOException ioe) {
                 // ignore
             }
@@ -303,94 +278,18 @@ public class V2Process {
     }
 
     /**
-     * Create an InformationObject (in XML) from data parsed from the V2 VEO
-     *
-     * @param io the InformationObject
-     * @param rdfIdPrefix prefix for RDF
-     * @param recordName record name
-     * @throws AppFatal if a programming error occurred
-     */
-    private void createIO(InformationObject io, String rdfIdPrefix, String recordName) throws AppFatal {
-        StringBuilder sb;
-        URI uri;
-        int i, j;
-
-        // create RDF URI prefix for AGLS metadata
-        try {
-            if (rdfIdPrefix == null) {
-                uri = new URI("file", null, "/" + recordName, null);
-            } else {
-                uri = new URI(rdfIdPrefix, null, "/" + recordName, null);
-            }
-        } catch (URISyntaxException use) {
-            throw new AppFatal("V2Process.createIO(): Failed building URI when generating RDF: " + use.getMessage());
-        }
-
-        sb = new StringBuilder();
-        sb.append(" <vers:InformationObject>\n");
-        if (io.label != null) {
-            sb.append("  <vers:InformationObjectType>");
-            sb.append(io.label);
-            sb.append("</vers:InformationObjectType>\n");
-        }
-        sb.append("  <vers:InformationObjectDepth>1</vers:InformationObjectDepth>\n");
-
-        // add a AGLS metadata package
-        sb.append("  <vers:MetadataPackage xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n");
-        sb.append("   <vers:MetadataSchemaIdentifier>http://prov.vic.gov.au/vers/schema/AGLS</vers:MetadataSchemaIdentifier>\n");
-        sb.append("   <vers:MetadataSyntaxIdentifier>http://www.w3.org/1999/02/22-rdf-syntax-ns</vers:MetadataSyntaxIdentifier>\n");
-        sb.append("<rdf:RDF xmlns:dcterms=\"http://purl.org/dc/terms/\" xmlns:aglsterms=\"http://www.agls.gov.au/agls/terms/\" xmlns:versterms=\"http://www.prov.vic.gov.au/vers/terms/\">\n");
-        sb.append("<rdf:Description rdf:about=\"");
-        sb.append(uri.toASCIIString());
-        sb.append("\">\n");
-        // sb.append(io.aglsMetadata.toString());
-        sb.append(" </rdf:Description>\n");
-        sb.append("</rdf:RDF>\n");
-        sb.append("  </vers:MetadataPackage>\n");
-
-        // add the VERS metadata package
-        sb.append("  <vers:MetadataPackage>\n");
-        sb.append("   <vers:MetadataSchemaIdentifier>http://prov.vic.gov.au/vers/schema/VERS</vers:MetadataSchemaIdentifier>\n");
-        sb.append("   <vers:MetadataSyntaxIdentifier>https://www.w3.org/TR/2008/REC-xml-20081126/</vers:MetadataSyntaxIdentifier>\n");
-        sb.append(io.metaPackages.get(0).content);
-        sb.append("  </vers:MetadataPackage>\n");
-
-        // add documents and encodingsToFind (if any)
-        for (i = 0; i < io.infoPieces.size(); i++) {
-            InformationPiece ip = io.infoPieces.get(i);
-            sb.append("  <vers:InformationPiece>\n");
-            if (ip.label != null && !ip.label.equals("")) {
-                sb.append("   <vers:Label>");
-                sb.append(ip.label);
-                sb.append("</vers:Label>\n");
-            }
-            if (ip.contentFiles != null) {
-                for (j = 0; j < ip.contentFiles.size(); j++) {
-                    ContentFile e = ip.contentFiles.get(j);
-                    sb.append("   <vers:ContentFile>\n");
-                    sb.append("    <vers:PathName>");
-                    sb.append(e.sourceFileName);
-                    sb.append("</vers:PathName>\n");
-                    // add CFU element to Information Object
-                    sb.append("\n<cfu>");
-                    sb.append("<veoPID>");
-                    // sb.append(veoPID);
-                    sb.append("</veoPID><cfSeqNo>");
-                    sb.append(e.seqNbr);
-                    sb.append("</cfSeqNo></cfu>\n");
-                    sb.append("   </vers:ContentFile>\n");
-                }
-            }
-            sb.append("  </vers:InformationPiece>\n");
-        }
-        sb.append(" </vers:InformationObject>\n");
-        // io.xmlContent = sb.toString();
-        uri = null;
-        sb = null;
-    }
-
-    /**
      * Private class to encapsulate reading a V2 VEO file.
+     *
+     * DANGER, DANGER, WILL ROBINSON! Be careful maintaining this code. The
+     * parser does not check the VEO against the DTD before or during the parse
+     * (validation of the VEO is done *after* parsing). This means that elements
+     * may appear out of order (or be missing entirely). If you allocate an
+     * object when you see one element, and then use the object when you later
+     * see another, you need to be careful that the object actually has been
+     * allocated before you use it. The hierarchy of elements can be depended on
+     * if you check the hierarchy when matching an element (i.e. if you allocate
+     * when seeing element 'x', then use it when seeing 'x/a', this will always
+     * work).
      */
     private class V2VEOParser implements XMLConsumer {
 
@@ -408,10 +307,7 @@ public class V2Process {
         private ArrayList<Event> events;    // list of events from VEO
         private Event event;                // current vers:Event being parsed
         private Path veoDir;                // directory in which to put content
-        private String agencyId;            // agency id from VEO id
-        private String seriesId;            // series id from VEO id
-        private String fileId;              // file id from VEO id
-        private String recordId;            // record id from VEO id
+        private Identifier id;              // identifier being read
 
         public V2VEOParser() throws AppFatal {
             clear();
@@ -422,7 +318,7 @@ public class V2Process {
          * Set globals to a standard state
          */
         private void clear() {
-            emptyVEO = true;
+            seqNo = 1;
             finalVersion = true;
             relation = null;
             io = null;
@@ -430,15 +326,17 @@ public class V2Process {
             document = null;
             encNo = 0;
             encoding = null;
+            if (encodingsToFind != null) {
+                encodingsToFind.clear();
+            }
             encodingsToFind = null;
             events = null;
             event = null;
             veoDir = null;
-            seqNo = 1;
-            agencyId = null;
-            seriesId = null;
-            fileId = null;
-            recordId = null;
+            if (id != null) {
+                id.free();
+            }
+            id = null;
         }
 
         /**
@@ -449,6 +347,7 @@ public class V2Process {
 
             // set up parse
             clear();
+            emptyVEO = true;
             encodingsToFind = new HashMap<>();
             this.io = io;
             this.events = events;
@@ -460,16 +359,7 @@ public class V2Process {
             } catch (AppError | AppFatal e) {
                 throw e;
             } finally { // free everything
-                relation = null;
-                document = null;
-                encoding = null;
-                encodingsToFind.clear();
-                encodingsToFind = null;
-                event = null;
-                agencyId = null;
-                seriesId = null;
-                fileId = null;
-                recordId = null;
+                clear();
             }
 
             // didn't find any contents (valid XML, but no content)
@@ -573,8 +463,8 @@ public class V2Process {
                 case "vers:OriginalVEO":
                     docNo = 0;
                     break;
-                case "vers:RecordMetadata/naa:ManagementHistory/vers:ManagementEvent":
-                case "vers:FileMetadata/naa:ManagementHistory/vers:ManagementEvent":
+                case "vers:RecordMetadata/naa:ManagementHistory/vers:ManagementEvent": //tc
+                case "vers:FileMetadata/naa:ManagementHistory/vers:ManagementEvent": // tc
                     if (finalVersion) {
                         event = new Event();
                     }
@@ -613,6 +503,10 @@ public class V2Process {
 
                     // only include this DocumentData if it is in the final revision
                     // or it was referred to from the final revision
+                    // NOTE if this DocumentData is in an older (modified version)
+                    // we will have already seen the final Encoding element as
+                    // the RevisedVEO element occurs earlier in the VEO. We recorded it
+                    // then, so we get the recorded information.
                     if (!finalVersion) {
                         encoding = encodingsToFind.get(versid);
                         if (encoding == null) {
@@ -622,12 +516,13 @@ public class V2Process {
                         encodingsToFind.remove(versid);
                     }
 
-                    // in onion VEOs, the vers:DocumentData element may not contain the element,
+                    // in modified VEOs, the vers:DocumentData element may not contain the element,
                     // but refer to another vers:DocumentData element that has the element
                     if (attributes != null) {
                         ref = attributes.getValue("vers:forContentsSeeElement");
                         if (ref != null) {
                             encoding.fileLocation = null;
+                            encoding.rootFileLocn = null;
                             encoding.refDoc = ref;
                             encodingsToFind.put(ref, encoding);
                             he = null;
@@ -636,6 +531,7 @@ public class V2Process {
                         ref = attributes.getValue("vers:forContentsSeeOriginalDocumentAndEncoding");
                         if (ref != null) {
                             encoding.fileLocation = null;
+                            encoding.rootFileLocn = null;
                             encoding.refDoc = ref;
                             encodingsToFind.put(ref, encoding);
                             he = null;
@@ -656,87 +552,78 @@ public class V2Process {
                         ext = "";
                     }
 
-                    encoding.fileLocation = veoDir.resolve((versid + ext));
+                    // put all the content files in a docdata directory in the unpacked directory
+                    encoding.rootFileLocn = veoDir.resolve("docdata");
+                    encoding.fileLocation = Paths.get((versid + ext));
                     encoding.seqNbr = seqNo;
                     seqNo++;
-                    he = new HandleElement(HandleElement.VALUE_TO_FILE, encoding.base64, encoding.fileLocation);
+                    he = new HandleElement(HandleElement.VALUE_TO_FILE, encoding.base64, encoding.rootFileLocn.resolve(encoding.fileLocation));
                     break;
-                case "vers:RecordMetadata/naa:FileIdentifier":
-                case "vers:RecordMetadata/naa:RecordIdentifier":
-                case "vers:RecordMetadata/vers:VEOIdentifier":
-                case "vers:FileMetadata/vers:VEOIdentifier":
+                case "vers:RecordMetadata/vers:VEOIdentifier": //tc
+                case "vers:FileMetadata/vers:VEOIdentifier": // tc
                     if (finalVersion) {
-                        agencyId = null;
-                        seriesId = null;
-                        fileId = null;
-                        recordId = null;
+                        id = new Identifier();
                     }
                     break;
-                case "vers:RecordMetadata/naa:Relation/naa:RelatedItemId":
-                case "vers:FileMetadata/naa:Relation/naa:RelatedItemId":
+                case "vers:RecordMetadata/naa:Relation": //tc
+                case "vers:FileMetadata/naa:Relation": //tc
+                    if (finalVersion) {
+                        relation = new Relationship();
+                    }
+                    break;
+                case "vers:RecordMetadata/naa:Relation/naa:RelatedItemId": //tc
+                case "vers:FileMetadata/naa:Relation/naa:RelatedItemId": //tc
                     if (finalVersion) {
                         he = new HandleElement(HandleElement.VALUE_TO_STRING);
-                        agencyId = null;
-                        seriesId = null;
-                        fileId = null;
-                        recordId = null;
-                    } else {
-                        he = null;
+                        id = new Identifier();
                     }
                     break;
-                case "vers:RecordMetadata/naa:Title/naa:TitleWords":
-                case "vers:FileMetadata/naa:Title/naa:TitleWords":
-                case "vers:RecordMetadata/naa:Description":
-                case "vers:FileMetadata/naa:Description":
-                case "vers:RecordMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:AgencyIdentifier/vers:Text":
-                case "vers:FileMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:AgencyIdentifier/vers:Text":
-                case "vers:RecordMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:SeriesIdentifier/vers:Text":
-                case "vers:FileMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:SeriesIdentifier/vers:Text":
-                case "vers:RecordMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:FileIdentifier/vers:Text":
-                case "vers:FileMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:FileIdentifier/vers:Text":
-                case "vers:RecordMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:VERSRecordIdentifier/vers:Text":
-                case "vers:FileMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:VERSRecordIdentifier/vers:Text":
-                case "vers:RecordMetadata/naa:Relation/naa:RelationType":
-                case "vers:FileMetadata/naa:Relation/naa:RelationType":
-                case "vers:RecordMetadata/naa:Relation/naa:RelationDescription":
-                case "vers:FileMetadata/naa:Relation/naa:RelationDescription":
-                case "vers:RecordMetadata/naa:Date/naa:DateTimeCreated":
-                case "vers:FileMetadata/naa:Date/naa:DateTimeCreated":
-                case "vers:RecordMetadata/naa:Date/naa:DateTimeTransacted":
-                case "vers:FileMetadata/naa:Date/naa:DateTimeTransacted":
-                case "vers:RecordMetadata/naa:Date/naa:DateTimeRegistered":
-                case "vers:FileMetadata/naa:Date/naa:DateTimeRegistered":
-                case "vers:FileMetadata/naa:Date/vers:DateTimeClosed":
-                case "vers:RecordMetadata/naa:Coverage/naa:Jurisdiction":
-                case "vers:FileMetadata/naa:Coverage/naa:Jurisdiction":
+                case "vers:RecordMetadata/naa:Title/naa:TitleWords": //tc
+                case "vers:FileMetadata/naa:Title/naa:TitleWords": //tc
+                case "vers:RecordMetadata/naa:Description": //tc
+                case "vers:FileMetadata/naa:Description": //tc
+                case "vers:RecordMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:AgencyIdentifier/vers:Text": //tc
+                case "vers:FileMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:AgencyIdentifier/vers:Text": //tc
+                case "vers:RecordMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:SeriesIdentifier/vers:Text": //tc
+                case "vers:FileMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:SeriesIdentifier/vers:Text": //tc
+                case "vers:RecordMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:FileIdentifier/vers:Text": //tv
+                case "vers:FileMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:FileIdentifier/vers:Text": //tc
+                case "vers:RecordMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:VERSRecordIdentifier/vers:Text": //tc
+                case "vers:FileMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:VERSRecordIdentifier/vers:Text": //tc
+                case "vers:RecordMetadata/naa:Relation/naa:RelationType": //tc
+                case "vers:FileMetadata/naa:Relation/naa:RelationType": // tc
+                case "vers:RecordMetadata/naa:Relation/naa:RelationDescription": //tc
+                case "vers:FileMetadata/naa:Relation/naa:RelationDescription": //tc
+                case "vers:RecordMetadata/naa:Date/naa:DateTimeCreated": //tc
+                case "vers:FileMetadata/vers:Date/naa:DateTimeCreated": //tc
+                case "vers:RecordMetadata/naa:Date/naa:DateTimeTransacted": //tc
+                case "vers:FileMetadata/vers:Date/naa:DateTimeTransacted": //tc
+                case "vers:RecordMetadata/naa:Date/naa:DateTimeRegistered": //tc
+                case "vers:FileMetadata/vers:Date/naa:DateTimeRegistered": //tc
+                case "vers:FileMetadata/vers:Date/vers:DateTimeClosed": //tc
+                case "vers:RecordMetadata/naa:Coverage/naa:Jurisdiction": //tc
+                case "vers:FileMetadata/naa:Coverage/naa:Jurisdiction": //tc
                 case "vers:RecordMetadata/naa:Coverage/naa:Jurisdication": // spelling error in standard!
-                case "vers:FileMetadata/naa:Coverage/naa:Jurisdication":
-                case "vers:RecordMetadata/naa:Coverage/naa:PlaceName":
-                case "vers:FileMetadata/naa:Coverage/naa:PlaceName":
-                case "vers:RecordMetadata/naa:Disposal/naa:DisposalAuthorisation":
-                case "vers:FileMetadata/naa:Disposal/naa:DisposalAuthorisation":
-                case "vers:RecordMetadata/naa:ManagementHistory/vers:ManagementEvent/naa:EventDateTime":
-                case "vers:FileMetadata/naa:ManagementHistory/vers:ManagementEvent/naa:EventDateTime":
-                case "vers:RecordMetadata/naa:ManagementHistory/vers:ManagementEvent/naa:EventType":
-                case "vers:FileMetadata/naa:ManagementHistory/vers:ManagementEvent/naa:EventType":
-                case "vers:RecordMetadata/naa:ManagementHistory/vers:ManagementEvent/naa:EventDescription":
-                case "vers:FileMetadata/naa:ManagementHistory/vers:ManagementEvent/naa:EventDescription":
-                case "vers:RecordMetadata/naa:RecordIdentifier/vers:VEOIdentifier/vers:AgencyIdentifier/vers:Text":
-                case "vers:FileMetadata/naa:FileIdentifier/vers:VEOIdentifier/vers:AgencyIdentifier/vers:Text":
-                case "vers:RecordMetadata/naa:RecordIdentifier/vers:VEOIdentifier/vers:SeriesIdentifier/vers:Text":
-                case "vers:FileMetadata/naa:FileIdentifier/vers:VEOIdentifier/vers:SeriesIdentifier/vers:Text":
-                case "vers:RecordMetadata/naa:RecordIdentifier/vers:VEOIdentifier/vers:FileIdentifier/vers:Text":
-                case "vers:FileMetadata/naa:FileIdentifier/vers:VEOIdentifier/vers:FileIdentifier/vers:Text":
-                case "vers:RecordMetadata/naa:RecordIdentifier/vers:VEOIdentifier/vers:VERSRecordIdentifier/vers:Text":
-                case "vers:RecordMetadata/vers:VEOIdentifier/vers:AgencyIdentifier/vers:Text":
-                case "vers:FileMetadata/vers:VEOIdentifier/vers:AgencyIdentifier/vers:Text":
-                case "vers:RecordMetadata/vers:VEOIdentifier/vers:SeriesIdentifier/vers:Text":
-                case "vers:FileMetadata/vers:VEOIdentifier/vers:SeriesIdentifier/vers:Text":
-                case "vers:RecordMetadata/vers:VEOIdentifier/vers:FileIdentifier/vers:Text":
-                case "vers:FileMetadata/vers:VEOIdentifier/vers:FileIdentifier/vers:Text":
-                case "vers:RecordMetadata/vers:VEOIdentifier/vers:VERSRecordIdentifier/vers:Text":
+                case "vers:FileMetadata/naa:Coverage/naa:Jurisdication": // tc
+                case "vers:RecordMetadata/naa:Coverage/naa:PlaceName": //tc
+                case "vers:FileMetadata/naa:Coverage/naa:PlaceName": //tc
+                case "vers:RecordMetadata/naa:Disposal/naa:DisposalAuthorisation": //tc
+                case "vers:FileMetadata/naa:Disposal/naa:DisposalAuthorisation": //tc
+                case "vers:RecordMetadata/naa:ManagementHistory/vers:ManagementEvent/naa:EventDateTime": //tc
+                case "vers:FileMetadata/naa:ManagementHistory/vers:ManagementEvent/naa:EventDateTime": //tc
+                case "vers:RecordMetadata/naa:ManagementHistory/vers:ManagementEvent/naa:EventType": //tc
+                case "vers:FileMetadata/naa:ManagementHistory/vers:ManagementEvent/naa:EventType"://tc
+                case "vers:RecordMetadata/naa:ManagementHistory/vers:ManagementEvent/naa:EventDescription": //tc
+                case "vers:FileMetadata/naa:ManagementHistory/vers:ManagementEvent/naa:EventDescription": //tc
+                case "vers:RecordMetadata/vers:VEOIdentifier/vers:AgencyIdentifier/vers:Text": //tc
+                case "vers:FileMetadata/vers:VEOIdentifier/vers:AgencyIdentifier/vers:Text": //tc
+                case "vers:RecordMetadata/vers:VEOIdentifier/vers:SeriesIdentifier/vers:Text": //tc
+                case "vers:FileMetadata/vers:VEOIdentifier/vers:SeriesIdentifier/vers:Text": //tc
+                case "vers:RecordMetadata/vers:VEOIdentifier/vers:FileIdentifier/vers:Text": //tc
+                case "vers:FileMetadata/vers:VEOIdentifier/vers:FileIdentifier/vers:Text": //tc
+                case "vers:RecordMetadata/vers:VEOIdentifier/vers:VERSRecordIdentifier/vers:Text": //tc
                 case "vers:FileMetadata/vers:VEOIdentifier/vers:VERSRecordIdentifier/vers:Text":
-                case "vers:Document/vers:DocumentMetadata/vers:DocumentTitle/vers:Text":
+                case "vers:Document/vers:DocumentMetadata/vers:DocumentTitle/vers:Text": //tc
                     if (finalVersion) {
                         he = new HandleElement(HandleElement.VALUE_TO_STRING);
                     } else {
@@ -836,7 +723,7 @@ public class V2Process {
                 case "vers:RecordMetadata/naa:Title/naa:TitleWords":
                 case "vers:FileMetadata/naa:Title/naa:TitleWords":
                     if (finalVersion) {
-                        io.title = value;
+                        io.titles.add(value);
                         io.label = value;
                     }
                     break;
@@ -856,34 +743,32 @@ public class V2Process {
                 case "vers:RecordMetadata/naa:Relation/naa:RelatedItemId":
                 case "vers:FileMetadata/naa:Relation/naa:RelatedItemId":
                     if (finalVersion) {
-                        if (value == null) {
-                            value = id2JSON();
-                        }
-                        relation.targetIds.add(value);
+                        relation.targetIds.add(id);
+                        id = null;
                     }
                     break;
                 case "vers:RecordMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:AgencyIdentifier/vers:Text":
                 case "vers:FileMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:AgencyIdentifier/vers:Text":
                     if (finalVersion) {
-                        agencyId = value;
+                        id.agencyId = value;
                     }
                     break;
                 case "vers:RecordMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:SeriesIdentifier/vers:Text":
                 case "vers:FileMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:SeriesIdentifier/vers:Text":
                     if (finalVersion) {
-                        seriesId = value;
+                        id.seriesId = value;
                     }
                     break;
                 case "vers:RecordMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:FileIdentifier/vers:Text":
                 case "vers:FileMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:FileIdentifier/vers:Text":
                     if (finalVersion) {
-                        fileId = value;
+                        id.fileId = value;
                     }
                     break;
                 case "vers:RecordMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:VERSRecordIdentifier/vers:Text":
                 case "vers:FileMetadata/naa:Relation/naa:RelatedItemId/vers:VEOIdentifier/vers:VERSRecordIdentifier/vers:Text":
                     if (finalVersion) {
-                        recordId = value;
+                        id.itemId = value;
                     }
                     break;
                 case "vers:RecordMetadata/naa:Relation/naa:RelationType":
@@ -899,26 +784,26 @@ public class V2Process {
                     }
                     break;
                 case "vers:RecordMetadata/naa:Date/naa:DateTimeCreated":
-                case "vers:FileMetadata/naa:Date/naa:DateTimeCreated":
+                case "vers:FileMetadata/vers:Date/naa:DateTimeCreated":
                     if (finalVersion) {
                         io.dateCreated = value;
                         io.dates.add(new Date("DateTimeCreated", value));
                     }
                     break;
                 case "vers:RecordMetadata/naa:Date/naa:DateTimeTransacted":
-                case "vers:FileMetadata/naa:Date/naa:DateTimeTransacted":
+                case "vers:FileMetadata/vers:Date/naa:DateTimeTransacted":
                     if (finalVersion) {
                         io.dates.add(new Date("DateTimeTransacted", value));
                     }
                     break;
                 case "vers:RecordMetadata/naa:Date/naa:DateTimeRegistered":
-                case "vers:FileMetadata/naa:Date/naa:DateTimeRegistered":
+                case "vers:FileMetadata/vers:Date/naa:DateTimeRegistered":
                     if (finalVersion) {
                         io.dateRegistered = value;
                         io.dates.add(new Date("DateTimeRegistered", value));
                     }
                     break;
-                case "vers:FileMetadata/naa:Date/vers:DateTimeClosed":
+                case "vers:FileMetadata/vers:Date/vers:DateTimeClosed":
                     if (finalVersion) {
                         io.dates.add(new Date("DateTimeClosed", value));
                     }
@@ -940,7 +825,7 @@ public class V2Process {
                 case "vers:RecordMetadata/naa:Disposal/naa:DisposalAuthorisation":
                 case "vers:FileMetadata/naa:Disposal/naa:DisposalAuthorisation":
                     if (finalVersion) {
-                        io.disposalAuthorisations.add(value);
+                        io.disposalAuthority.rdas.add(value);
                     }
                     break;
                 case "vers:RecordMetadata/naa:ManagementHistory/vers:ManagementEvent":
@@ -964,65 +849,37 @@ public class V2Process {
                 case "vers:RecordMetadata/naa:ManagementHistory/vers:ManagementEvent/naa:EventDescription":
                 case "vers:FileMetadata/naa:ManagementHistory/vers:ManagementEvent/naa:EventDescription":
                     if (finalVersion) {
-                        event.description = value;
-                    }
-                    break;
-                case "vers:RecordMetadata/naa:RecordIdentifier/vers:VEOIdentifier/vers:AgencyIdentifier/vers:Text":
-                case "vers:FileMetadata/naa:FileIdentifier/vers:VEOIdentifier/vers:AgencyIdentifier/vers:Text":
-                    if (finalVersion) {
-                        agencyId = value;
-                    }
-                    break;
-                case "vers:RecordMetadata/naa:RecordIdentifier/vers:VEOIdentifier/vers:SeriesIdentifier/vers:Text":
-                case "vers:FileMetadata/naa:FileIdentifier/vers:VEOIdentifier/vers:SeriesIdentifier/vers:Text":
-                    if (finalVersion) {
-                        seriesId = value;
-                    }
-                    break;
-                case "vers:RecordMetadata/naa:RecordIdentifier/vers:VEOIdentifier/vers:FileIdentifier/vers:Text":
-                case "vers:FileMetadata/naa:FileIdentifier/vers:VEOIdentifier/vers:FileIdentifier/vers:Text":
-                    if (finalVersion) {
-                        fileId = value;
-                    }
-                    break;
-                case "vers:RecordMetadata/naa:RecordIdentifier/vers:VEOIdentifier/vers:VERSRecordIdentifier/vers:Text":
-                    if (finalVersion) {
-                        recordId = value;
-                    }
-                    break;
-                case "vers:RecordMetadata/naa:FileIdentifier":
-                case "vers:RecordMetadata/naa:RecordIdentifier":
-                    if (finalVersion) {
-                        io.addIdentifier(id2JSON(), null);
+                        event.descriptions.add(value);
                     }
                     break;
                 case "vers:RecordMetadata/vers:VEOIdentifier/vers:AgencyIdentifier/vers:Text":
                 case "vers:FileMetadata/vers:VEOIdentifier/vers:AgencyIdentifier/vers:Text":
                     if (finalVersion) {
-                        agencyId = value;
+                        id.agencyId = value;
                     }
                     break;
                 case "vers:RecordMetadata/vers:VEOIdentifier/vers:SeriesIdentifier/vers:Text":
                 case "vers:FileMetadata/vers:VEOIdentifier/vers:SeriesIdentifier/vers:Text":
                     if (finalVersion) {
-                        seriesId = value;
+                        id.seriesId = value;
                     }
                     break;
                 case "vers:RecordMetadata/vers:VEOIdentifier/vers:FileIdentifier/vers:Text":
                 case "vers:FileMetadata/vers:VEOIdentifier/vers:FileIdentifier/vers:Text":
                     if (finalVersion) {
-                        fileId = value;
+                        id.fileId = value;
                     }
                     break;
                 case "vers:RecordMetadata/vers:VEOIdentifier/vers:VERSRecordIdentifier/vers:Text":
                     if (finalVersion) {
-                        recordId = value;
+                        id.itemId = value;
                     }
                     break;
                 case "vers:RecordMetadata/vers:VEOIdentifier":
                 case "vers:FileMetadata/vers:VEOIdentifier":
                     if (finalVersion) {
-                        io.addIdentifier(id2JSON(), null);
+                        io.addIdentifier(id);
+                        id = null;
                     }
                     break;
                 case "vers:Document/vers:DocumentMetadata/vers:DocumentTitle/vers:Text":
@@ -1031,15 +888,15 @@ public class V2Process {
                     }
                     break;
                 case "vers:Document/vers:Encoding/vers:EncodingMetadata/vers:FileRendering/vers:RenderingKeywords":
-                    // get the list of formats. We strip the leading and trailing
-                    // quotes (if present), and split on either a space or a ';'
-                    // to handle problem RenderingKeywords
                     String[] s1;
 
                     if (!finalVersion) {
                         break;
                     }
 
+                    // get the list of formats. We strip the leading and trailing
+                    // quotes (if present), and split on either a space or a ';'
+                    // to handle problem RenderingKeywords
                     String s = value.trim();
                     if (s.charAt(0) == '\'') {
                         s = s.substring(1);
@@ -1058,97 +915,20 @@ public class V2Process {
                         }
                     }
 
-                    // the final format is assumed to be the file type. Convert
-                    // known MIME format to normal Windows file extensions to go
-                    // on the end of the file name. If no '.' at start,
-                    // add one.
+                    // the final format is assumed to be the file type. This may
+                    // be a file extension or a MIME type. If a file extension
+                    // it should be prefixed by a '.', and not have a '.' if a
+                    // MIME type, but we cannot depend on this. So, we first
+                    // strip the leading '.' if present. Then we check to see
+                    // if it is a registered MIME type, and, if so, replace with
+                    // the file extension. NOTE that the stored file extension
+                    // is without the leading '.'
                     String fileExt = s1[s1.length - 1].trim();
-                    switch (fileExt) {
-                        case "text/plain":
-                        case ".text/plain":
-                            fileExt = ".txt";
-                            break;
-                        case "text/html":
-                        case ".text/html":
-                            fileExt = ".html";
-                            break;
-                        case "text/xml":
-                        case ".text/xml":
-                            fileExt = ".xml";
-                            break;
-                        case "text/css":
-                        case ".text/css":
-                            fileExt = ".css";
-                            break;
-                        case "text/csv":
-                        case ".text/csv":
-                            fileExt = ".csv";
-                            break;
-                        case "image/tiff":
-                        case ".image/tiff":
-                            fileExt = ".tif";
-                            break;
-                        case "image/jpeg":
-                        case ".image/jpeg":
-                            fileExt = ".jpg";
-                            break;
-                        case "image/jp2":
-                        case ".image/jp2":
-                            fileExt = ".jp2";
-                            break;
-                        case "application/pdf":
-                        case ".application/pdf":
-                            fileExt = ".pdf";
-                            break;
-                        case "application/warc":
-                        case ".application/warc":
-                            fileExt = ".warc";
-                            break;
-                        case "application/msword":
-                        case ".application/msword":
-                            fileExt = ".doc";
-                            break;
-                        case "application/vnd.ms-excel":
-                        case ".application/vnd.ms-excel":
-                            fileExt = ".xls";
-                            break;
-                        case "application/vnd.ms-powerpoint":
-                        case ".application/vnd.ms-powerpoint":
-                            fileExt = ".ppt";
-                            break;
-                        case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-                        case ".application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-                            fileExt = ".docx";
-                            break;
-                        case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-                        case ".application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-                            fileExt = ".xlsx";
-                            break;
-                        case "application/vnd.openxmlformats-officedocument.presentationml.presentation":
-                        case ".application/vnd.openxmlformats-officedocument.presentationml.presentation":
-                            fileExt = ".pptx";
-                            break;
-                        case "audio/mpeg":
-                        case ".audio/mpeg":
-                        case "audio/mpeg4-generic":
-                        case ".audio/mpeg4-generic":
-                            fileExt = ".mpg";
-                            break;
-                        case "video/mpeg":
-                        case ".video/mpeg":
-                        case "video/mp4":
-                        case ".video/mp4":
-                            fileExt = ".mp4";
-                            break;
-                        case "message/rfc822":
-                        case ".message/rfc822":
-                            fileExt = ".eml";
-                            break;
-                        default:
-                            if (fileExt.charAt(0) != '.') {
-                                fileExt = "." + fileExt;
-                            }
-                            break;
+                    if (fileExt.startsWith(".")) {
+                        fileExt = fileExt.substring(1);
+                    }
+                    if ((s = ff.mimeType2FileExt(fileExt)) != null) {
+                        fileExt = s;
                     }
                     encoding.fileExt = fileExt;
                     break;
@@ -1161,7 +941,7 @@ public class V2Process {
                 case "vers:Document/vers:Encoding/vers:DocumentData":
                     if (encoding != null && encoding.fileLocation != null) {
                         try {
-                            encoding.fileSize = Files.size(encoding.fileLocation);
+                            encoding.fileSize = Files.size(encoding.rootFileLocn.resolve(encoding.fileLocation));
                         } catch (IOException ioe) {
                             LOG.log(Level.INFO, "V2Process.V2VEOParser.endElement(): failed getting size of file: {0}", ioe.getMessage());
                             encoding.fileSize = 0;
@@ -1171,41 +951,6 @@ public class V2Process {
                 default:
                     break;
             }
-        }
-
-        private String id2JSON() {
-            String s;
-            boolean output;
-
-            s = "{";
-            output = false;
-            if (agencyId != null) {
-                s += "\"agencyId\":\"" + agencyId + "\"";
-                output = true;
-            }
-            if (seriesId != null) {
-                if (output) {
-                    s += ", ";
-                }
-                s += "\"seriesId\":\"" + seriesId + "\"";
-                output = true;
-            }
-            if (fileId != null) {
-                if (output) {
-                    s += ", ";
-                }
-                s += "\"fileId\":\"" + fileId + "\"";
-                output = true;
-            }
-            if (recordId != null) {
-                if (output) {
-                    s += ", ";
-                }
-                s += "\"recordId\":\"" + recordId + "\"";
-                output = true;
-            }
-            s += "}";
-            return s;
         }
     }
 }

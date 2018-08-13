@@ -7,18 +7,25 @@
 package VPA;
 
 import java.util.ArrayList;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 /**
  * This represents an Information Piece from a VEO. In the case of a V2 VEO, it
- * represents a File VEO or Record VEO.
+ * represents a Document from a Record VEO.
  */
-public class InformationPiece {
+public final class InformationPiece {
 
     InformationObject parent;   // information object that contains this piece
     String label;               // label (if any) associated with this IO
-    int seqNbr;                     // sequence number of information piece within information object
+    int seqNbr;                 // sequence number of information piece within information object
     ArrayList<ContentFile> contentFiles;  // contained content files
 
+    /**
+     * Constructor
+     *
+     * @param parent Information Object containing this IP
+     */
     public InformationPiece(InformationObject parent) {
         this.parent = parent;
         label = null;
@@ -26,14 +33,9 @@ public class InformationPiece {
         contentFiles = new ArrayList<>();
     }
 
-    public ContentFile addContentFile() {
-        ContentFile cf;
-
-        cf = new ContentFile(this);
-        contentFiles.add(cf);
-        return cf;
-    }
-
+    /**
+     * Free the information associated with this Information Piece
+     */
     public void free() {
         int j;
 
@@ -47,11 +49,25 @@ public class InformationPiece {
     }
 
     /**
-     * Represent the IP as JSON
+     * Add a content file to this information piece
+     *
+     * @return the added content file
+     */
+    public ContentFile addContentFile() {
+        ContentFile cf;
+
+        cf = new ContentFile(this);
+        contentFiles.add(cf);
+        return cf;
+    }
+
+    /**
+     * Represent the IP as a string
      *
      * @return a string representing the IP
      */
-    public String toJSON() {
+    @Override
+    public String toString() {
         StringBuilder sb = new StringBuilder();
         int i;
 
@@ -61,7 +77,7 @@ public class InformationPiece {
         if (contentFiles.size() > 0) {
             sb.append("    \"contentFiles\":[\n");
             for (i = 0; i < contentFiles.size(); i++) {
-                sb.append(contentFiles.get(i).toJSON());
+                sb.append(contentFiles.get(i).toString());
                 if (i < contentFiles.size() - 1) {
                     sb.append(",\n");
                 }
@@ -70,5 +86,27 @@ public class InformationPiece {
         }
         sb.append("}");
         return sb.toString();
+    }
+
+    /**
+     * Represent the IP as JSON
+     *
+     * @return a JSONObject representing the IP
+     */
+    public JSONObject toJSON() {
+        JSONObject j = new JSONObject();
+        JSONArray ja;
+        int i;
+
+        j.put("ipLabel", label);
+        j.put("ipSeqNo", seqNbr);
+        if (contentFiles.size() > 0) {
+            ja = new JSONArray();
+            j.put("contentFiles", ja);
+            for (i = 0; i < contentFiles.size(); i++) {
+                ja.add(contentFiles.get(i).toJSON());
+            }
+        }
+        return j;
     }
 }

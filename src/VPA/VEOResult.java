@@ -34,7 +34,27 @@ public class VEOResult {
         this.veoType = veoType;
         this.timeProcStart = Instant.now();
     }
-    
+
+    /**
+     * Construct a VEOResult
+     * 
+     * @param veoId     file name of VEO
+     * @param veoType   type of VEO 
+     * @param success   true if VEO was successfully processed
+     * @param result    test describing result of processing
+     * @param packages  location of the DAS, AMS, & SAMS packages (null if result is false)
+     * @param started   instant VEO processing started 
+     */
+    public VEOResult(String veoId, int veoType, boolean success, String result, Path packages, Instant started) {
+        this.veoId = veoId;
+        this.veoType = veoType;
+        this.timeProcStart = started;
+        timeProcEnded = Instant.now();
+        this.success = success;
+        this.result = result;
+        this.packages = packages;
+    }
+
     /**
      * Free the VEO Result and all who sail in her
      */
