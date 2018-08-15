@@ -5,6 +5,7 @@
  * Version 1.0 February 2018
  * Version 1.1 25 June 2018 The options for copying, moving, or linking content
  * files were removed as files are now directly ZIPped from the original files.
+ * Version 1.2 15 Aug 2018 Significant testing and revision
  */
 package VPA;
 
