@@ -43,6 +43,49 @@ public final class ContentFile {
         refDoc = null;
         fileSize = 0;
     }
+    
+    /**
+     * Generate a SAMS URI for this Content File. This method returns null if
+     * there is no actual content file.
+     * 
+     * The SAMS URI consists of a prefix (https://content.prov.vic.gov.au/rest/records/),
+     * followed by the suffix of the IO PID, divided into groups separated by
+     * '/', followed by the sequence number of this content file in the *VEO*
+     * (note, not IO), followed by the relative path of the file location.
+     * 
+     * @return URL used to obtain the content file from SAMS
+     */
+    public String getSAMSuri() {
+        StringBuilder sb = new StringBuilder();
+        String s;
+        String token[];
+        int i;
+        
+        if (fileLocation == null) {
+            return null;
+        }
+        sb.append("https://content.prov.vic.gov.au/rest/records/");
+        s = parent.parent.ioPID;
+        token = s.split("/");
+        switch (token.length) {
+            case 0:
+            case 1:
+                s = "";
+                break;
+            default:
+                s = token[1];
+        }
+        for (i=0; i<8; i=i+2) {
+            sb.append(s.substring(i,i+2));
+            sb.append("/");
+        }
+        sb.append(s.substring(i));
+        sb.append("/sequence/");
+        sb.append(seqNbr);
+        sb.append("/files/");
+        sb.append(fileLocation.toString().replace('\\', '/'));
+        return sb.toString();
+    }
 
     /**
      * Output content file as a String
@@ -57,7 +100,7 @@ public final class ContentFile {
         sb.append("      \"sourceFileName\":\"" + Json.safe(sourceFileName) + "\",\n");
         sb.append("      \"sourceFileExtension\":\"" + Json.safe(fileExt) + "\",\n");
         if (fileLocation != null) {
-            sb.append("      \"fileLocation\":\"" + Json.safe(fileLocation.toString()) + "\",\n");
+            sb.append("      \"fileLocation\":\"" + Json.safe(fileLocation.toString().replace('\\', '/')) + "\",\n");
         }
         sb.append("      \"fileSizeBytes\":" + fileSize + ",\n");
         sb.append("}");
@@ -75,9 +118,10 @@ public final class ContentFile {
         j.put("sourceFileName", sourceFileName);
         j.put("sourceFileExtension", fileExt);
         if (fileLocation != null) {
-            j.put("fileLocation", fileLocation.toString());
+            j.put("fileLocation", fileLocation.toString().replace('\\', '/'));
         }
         j.put("fileSizeBytes", fileSize);
+        j.put("contentFileURI", getSAMSuri());
         return j;
     }
 }

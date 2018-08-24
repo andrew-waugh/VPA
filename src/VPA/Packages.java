@@ -108,31 +108,6 @@ public final class Packages {
             }
             s = Json.prettyPrintJSON(j1.toJSONString());
 
-            // alternative build JSON
-            /*
-            sb = new StringBuilder();
-            sb.append("{\n");
-            sb.append(" \"set\": {");
-            sb.append(setMetadata);
-            sb.append("},\n");
-            sb.append(" \"io\": ");
-            sb.append(io.toString());
-            sb.append(",\n");
-            // add events (if any)
-            if (events.size() > 0) {
-                sb.append("  \"events\":[\n");
-                for (j = 0; j < events.size(); j++) {
-                    sb.append(events.get(j).toString());
-                    if (j < events.size() - 1) {
-                        sb.append(",\n");
-                    }
-                }
-                sb.append("]\n");
-            }
-            sb.append("}");
-            s = sb.toString();
-            */
-
             // write to file
             p = amsDir.resolve("IO-" + i + ".json");
             try {
@@ -209,7 +184,7 @@ public final class Packages {
 
                             // move the file specified by the content file to the SAMS directory
                             p = moveFile(cf.rootFileLocn, cf.fileLocation);
-                            osw.write(io.veoPID + "," + cf.seqNbr + ","+ io.ioPID + ",\"" + p.toString() + "\",\"" + ff.fileExt2MimeType(cf.fileExt) + "\"\r\n");
+                            osw.write(io.veoPID + "," + cf.seqNbr + ","+ io.ioPID + "," + cf.getSAMSuri() + ",\"" + p.toString().replace('\\', '/') + "\",\"" + ff.fileExt2MimeType(cf.fileExt) + "\"\r\n");
                         }
                     }
                 }

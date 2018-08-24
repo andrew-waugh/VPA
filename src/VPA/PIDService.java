@@ -103,7 +103,7 @@ public class PIDService {
         // for testing, so we don't hit the production server unless necessary
         if (!useRealHandleService) {
             count++;
-            return "123/" + count;
+            return "123456789a/" + "0123456789abcdef0123456789ab"+count;
         }
 
         // build POST data in JSON and convert it to a UTF-8 encoded array of bytes
