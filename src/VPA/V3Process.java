@@ -747,7 +747,7 @@ public final class V3Process {
                     if (i == -1) {
                         cf.fileExt = "unknown";
                     } else {
-                        cf.fileExt = s.substring(i);
+                        cf.fileExt = s.substring(i+1);
                     }
                     cf.sourceFileName = value;
 

@@ -430,12 +430,14 @@ public final class InformationObject {
                 ja.add(ids.get(i).toJSON());
             }
         }
+        /* Removed at request of DAS team - DAS will use the dates directly
         if (dateCreated != null) {
             j1.put("dateCreated", dateCreated);
         }
         if (dateRegistered != null) {
             j1.put("dateRegistered", dateRegistered);
         }
+        */
         if (dates.size() > 0) {
             ja = new JSONArray();
             j1.put("dates", ja);

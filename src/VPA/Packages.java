@@ -167,7 +167,7 @@ public final class Packages {
         bos = new BufferedOutputStream(fos);
         osw = new OutputStreamWriter(bos);
         try {
-            osw.write("VEO PID,Seq Nbr,RI PID,File name rel to SAMS dir,MIME type\r\n");
+            osw.write("VEO PID,Seq Nbr,RI PID,SAMS URI,File name rel to SAMS dir,MIME type\r\n");
             
             // go through each Information Object...
             for (i = 0; i < ios.size(); i++) {
