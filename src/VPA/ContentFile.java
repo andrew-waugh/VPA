@@ -6,6 +6,7 @@
  */
 package VPA;
 
+import VERSCommon.AppError;
 import java.nio.file.Path;
 import org.json.simple.JSONObject;
 
@@ -54,30 +55,41 @@ public final class ContentFile {
      * (note, not IO), followed by the relative path of the file location.
      * 
      * @return URL used to obtain the content file from SAMS
+     * @throws VERSCommon.AppError if cannot located the prefix and the suffix
      */
-    public String getSAMSuri() {
+    public String getSAMSuri() throws AppError {
         StringBuilder sb = new StringBuilder();
         String s;
         String token[];
-        int i;
+        int i, j, k;
         
         if (fileLocation == null) {
             return null;
         }
         sb.append("https://content.prov.vic.gov.au/rest/records/");
         s = parent.parent.ioPID;
+        
+        // get the suffix (only of the PID)
         token = s.split("/");
-        switch (token.length) {
-            case 0:
-            case 1:
-                s = "";
-                break;
-            default:
-                s = token[1];
+        if (token.length != 2) {
+            throw new AppError("PID does not have a prefix and suffix separated by a '/': '"+s+"' (ContentFile.getSAMSuri)");
         }
-        for (i=0; i<8; i=i+2) {
-            sb.append(s.substring(i,i+2));
-            sb.append("/");
+        s = token[1];
+        
+        // suppress the hyphens in the suffix, and put in five levels
+        j = 0;
+        k = 0;
+        for (i=0; i<s.length(); i++) {
+            if (s.charAt(i) == '-') {
+                continue;
+            }
+            sb.append(s.charAt(i));
+            j++;
+            if (j == 2 && k < 4) {
+                sb.append('/');
+                j = 0;
+                k++;
+            }
         }
         sb.append(s.substring(i));
         sb.append("/sequence/");
@@ -111,8 +123,9 @@ public final class ContentFile {
      * Represent the content file as JSON
      *
      * @return a string representing the content file
+     * @throws VERSCommon.AppError if a problem
      */
-    public JSONObject toJSON() {
+    public JSONObject toJSON() throws AppError {
         JSONObject j = new JSONObject();
         j.put("cfSeqNo", seqNbr);
         j.put("sourceFileName", sourceFileName);
