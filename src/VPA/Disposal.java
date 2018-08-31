@@ -5,6 +5,7 @@
  */
 package VPA;
 
+import VERSCommon.AppError;
 import java.util.ArrayList;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -67,8 +68,9 @@ public class Disposal {
      * Turn a disposal authorisation into a JSON object
      *
      * @return a JSONObject representation of the disposal authorisation
+     * @throws VERSCommon.AppError in case of failure
      */
-    public JSONObject toJSON() {
+    public JSONObject toJSON() throws AppError {
         JSONObject j1, j2;
         JSONArray ja;
         int i;

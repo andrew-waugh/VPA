@@ -6,6 +6,7 @@
  */
 package VPA;
 
+import VERSCommon.AppError;
 import java.util.ArrayList;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -92,8 +93,9 @@ public final class InformationPiece {
      * Represent the IP as JSON
      *
      * @return a JSONObject representing the IP
+     * @throws VERSCommon.AppError if a failure occurred
      */
-    public JSONObject toJSON() {
+    public JSONObject toJSON() throws AppError {
         JSONObject j = new JSONObject();
         JSONArray ja;
         int i;

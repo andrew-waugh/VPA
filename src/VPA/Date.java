@@ -5,6 +5,7 @@
  */
 package VPA;
 
+import VERSCommon.AppError;
 import org.json.simple.JSONObject;
 
 /**
@@ -57,8 +58,9 @@ public final class Date {
      * returned
      *
      * @return a string containing a JSON type/value pair
+     * @throws VERSCommon.AppError in case of failure
      */
-    public JSONObject toJSON() {
+    public JSONObject toJSON() throws AppError {
         JSONObject j = new JSONObject();
         if (type == null || value == null) {
             return null;

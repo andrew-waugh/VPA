@@ -6,6 +6,7 @@
  */
 package VPA;
 
+import VERSCommon.AppError;
 import org.json.simple.JSONObject;
 
 /**
@@ -57,8 +58,9 @@ public final class MetadataPackage {
      * Represent the Metadata Package as JSON
      *
      * @return a JSONObject representing the event
+     * @throws VERSCommon.AppError in case of failure
      */
-    public JSONObject toJSON() {
+    public JSONObject toJSON() throws AppError {
         JSONObject j = new JSONObject();
         j.put("schema", schema);
         j.put("format", syntax);

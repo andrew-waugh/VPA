@@ -5,6 +5,7 @@
  */
 package VPA;
 
+import VERSCommon.AppError;
 import java.util.ArrayList;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -121,12 +122,13 @@ public class Relationship {
         return sb.toString();
     }
 
-        /**
+    /**
      * Represent the Relationship as JSON
      *
      * @return a JSONObject representation
+     * @throws VERSCommon.AppError in case of failure
      */
-    public JSONObject toJSON() {
+    public JSONObject toJSON() throws AppError {
         JSONObject j1, j2;
         JSONArray ja;
         int i;

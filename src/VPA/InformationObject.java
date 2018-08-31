@@ -6,6 +6,7 @@
  */
 package VPA;
 
+import VERSCommon.AppError;
 import VERSCommon.AppFatal;
 import java.util.ArrayList;
 import org.json.simple.JSONArray;
@@ -371,8 +372,9 @@ public final class InformationObject {
      * Represent the IO as JSON
      *
      * @return a JSONObject representing the IO
+     * @throws VERSCommon.AppError in case of failure
      */
-    public JSONObject toJSON() {
+    public JSONObject toJSON() throws AppError {
         JSONObject j1, j2, j3;
         JSONArray ja;
         int i;

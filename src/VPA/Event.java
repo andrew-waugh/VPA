@@ -6,6 +6,7 @@
  */
 package VPA;
 
+import VERSCommon.AppError;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -85,8 +86,9 @@ public final class Event {
      * Represent the Event as JSON
      *
      * @return a JSONObject representing the event
+     * @throws VERSCommon.AppError in case of failure
      */
-    public JSONObject toJSON() {
+    public JSONObject toJSON() throws AppError {
         JSONObject j1, j2;
         JSONArray ja;
         int i;
