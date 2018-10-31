@@ -128,6 +128,47 @@ public final class VPA {
     }
 
     /**
+     * Process VEO
+     *
+     * Process a file containing a VEO. This method is only used for the
+     * *initial* processing on ingest
+     *
+     * @param setMetadata metadata about the set as a whole
+     * @param veo	the file to parse
+     * @param veoOutputDir directory that will contain result of processing VEO
+     * @return a VEOResult containing the results of the processing
+     * @throws AppFatal if a system error occurred
+     * @throws AppError if an unexpected error occurred processing this VEO
+     */
+    public VEOResult process(String setMetadata, Path veo, Path veoOutputDir) throws AppFatal, AppError {
+        return process(setMetadata, veo, veoOutputDir, null);
+    }
+
+    /**
+     * Reprocess VEO
+     *
+     * Reprocess a file containing a VEO. This method is only used to reprocess
+     * a VEO to provide access to closed content
+     *
+     * @param setMetadata metadata about the set as a whole
+     * @param veo	the file to parse
+     * @param recordName the name of the Information Object to be produced
+     * @param packageDir directory in which to create the packages
+     * @param pids VEO and IO PIDS from original processing.
+     * @return a VEOResult containing the results of the processing
+     * @throws AppFatal if a system error occurred
+     * @throws AppError if an unexpected error occurred processing this VEO
+     */
+    public VEOResult reprocess(String setMetadata, Path veo, Path veoOutputDir, String pids) throws AppFatal, AppError {
+
+        // check parameters
+        if (pids == null) {
+            throw new AppError("VPA.reprocess(): Passed null PIDS JSON object to be processed");
+        }
+        return process(setMetadata, veo, veoOutputDir, pids);
+    }
+
+    /**
      * Process a file containing a VEO. A file ending in a '.veo' is assumed to
      * be a V2 VEO, and a file ending in '.zip' a V3 VEO (note that there are
      * lots of ZIP files that are not VEOs; these will be picked up when
@@ -145,19 +186,26 @@ public final class VPA {
      * The set metadata is a simple list of JSON properties. This are included
      * verbatim in the AMS package in each RecordItem.
      *
+     * The pids is a JSON object containing the VEO and IO PIDS associated with
+     * the VEO. This argument must be null when the VEO is first processed (i.e.
+     * on ingest), and be non-null when the VEO is reprocessed (i.e. to provide
+     * access to closed content).
+     *
      * @param setMetadata set metadata to be added to the AMS package
      * @param veo the file containing the VEO
      * @param veoOutputDir directory that will contain result of processing VEO
+     * @param pids a JSON string containing the VEO and IO PIDS
      * @return the result of processing the VEO
      * @throws AppFatal if a system error occurred
      * @throws AppError processing failed, but further VEOs can be submitted
      */
-    public VEOResult process(String setMetadata, Path veo, Path veoOutputDir) throws AppFatal, AppError {
+    private VEOResult process(String setMetadata, Path veo, Path veoOutputDir, String pids) throws AppFatal, AppError {
         int i;
         String recordName;  // name of this record element (from the file, without the final '.xml')
         VEOResult res;      // result of processing the VEO
         JSONParser parser = new JSONParser();
         JSONObject sm;      // set metadata expressed as JSON
+        JSONObject pd;      // VEO and IO PIDS expressed as JSON
 
         // check parameters
         if (veo == null) {
@@ -183,6 +231,16 @@ public final class VPA {
             }
         }
 
+        // parse the PIDS information into JSON
+        pd = null;
+        if (pids != null) {
+            try {
+                pd = (JSONObject) parser.parse(pids);
+            } catch (ParseException pe) {
+                throw new AppError("Set metadata '" + pids + "' is not valid JSON: " + pe.toString() + " (VPA.process())");
+            }
+        }
+
         // get the record name from the file name minus the file extension ('.veo' or '.zip')
         String s = veo.getFileName().toString();
         if ((i = s.lastIndexOf('.')) != -1) {
@@ -194,32 +252,12 @@ public final class VPA {
         // create the package directories
         packages.createDirs(veoOutputDir);
 
-        // ensure that the set metadata is a straight collection of JSON properties
-        // (i.e. strip off any leading '"set": {' or '{', and any trailing '}')
-        /*
-        if (setMetadata != null) {
-            setMetadata = setMetadata.trim();
-            if (setMetadata.startsWith("\"set\"")) {
-                setMetadata = setMetadata.substring("\"set\"".length()).trim();
-            }
-            if (setMetadata.startsWith(":")) {
-                setMetadata = setMetadata.substring(":".length()).trim();
-            }
-            if (setMetadata.startsWith("{")) {
-                setMetadata = setMetadata.substring("{".length()).trim();
-            }
-            if (setMetadata.endsWith("}")) {
-                setMetadata = setMetadata.substring(0, setMetadata.length() - "}".length()).trim();
-            }
-        }
-*/
-
         // process the veo file
         try {
             if (veo.toString().toLowerCase().endsWith(".veo")) {
-                res = v2p.process(sm, veo, recordName, veoOutputDir);
+                res = v2p.process(sm, veo, recordName, veoOutputDir, pd);
             } else if (veo.toString().toLowerCase().endsWith(".zip")) {
-                res = v3p.process(sm, veo, recordName, veoOutputDir);
+                res = v3p.process(sm, veo, recordName, veoOutputDir, pd);
             } else {
                 throw new AppError("Error processing '" + veo.toString() + "' as file must end in '.zip' (V3) or '.veo' (V2)");
             }

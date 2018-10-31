@@ -16,7 +16,7 @@ import org.json.simple.JSONObject;
 public class Disposal {
 
     ArrayList<String> rdas; // list of RDAs applicable
-    String disposalClass;   // disposal class
+    String disposalClass;   // disposal class (can be null)
 
     public Disposal() {
         free();
@@ -85,7 +85,9 @@ public class Disposal {
             }
             j1.put("rdas", ja);
         }
-        j1.put("disposalClass", disposalClass);
+        if (disposalClass != null) {
+            j1.put("disposalClass", disposalClass);
+        }
         return j1;
     }
 }

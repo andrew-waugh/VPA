@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.xml.sax.*;
 
@@ -103,11 +104,13 @@ public class V2Process {
      * @param veo	the file to parse
      * @param recordName the name of the Information Object to be produced
      * @param packageDir the directory where the VEO is to be processed
+     * @param pids VEO and IO PIDS from original processing. This must be null
+     * for the initial ingest
      * @return a result structure showing the results of processing the VEO
      * @throws AppFatal if a system error occurred
      * @throws AppError processing failed, but further VEOs can be submitted
      */
-    public VEOResult process(JSONObject setMetadata, Path veo, String recordName, Path packageDir) throws AppFatal, AppError {
+    public VEOResult process(JSONObject setMetadata, Path veo, String recordName, Path packageDir, JSONObject pids) throws AppFatal, AppError {
         StringWriter out;           // writer to capture abbreviated VEO
         ArrayList<InformationObject> ios; // IOs read from VEO
         InformationObject io;       // current information object
@@ -171,15 +174,23 @@ public class V2Process {
             }
 
             // assign the PIDs
-            veoPID = ps.mint();
-            for (i = 0; i < ios.size(); i++) {
-                ios.get(i).assignPIDs(veoPID);
+            if (pids == null) {
+                veoPID = ps.mint();
+                for (i = 0; i < ios.size(); i++) {
+                    ios.get(i).assignPIDs(veoPID);
+                }
+            } else {
+                veoPID = (String) pids.get("veoPID");
+                JSONArray ja = (JSONArray) pids.get("ioPIDs");
+                for (i = 0; i < ios.size(); i++) {
+                    ios.get(i).assignPIDs(veoPID, (String) ja.get(i));
+                }
             }
 
             // create AMS and SAMS outputs
             packages.createAMSPackage(setMetadata, ios, events);
             packages.createSAMSPackage(ios);
-            packages.createDASPackage(veo, veoPID);
+            packages.createDASPackage(veo, veoPID, ios);
         } catch (AppFatal af) {
             throw af;
         } catch (VEOError | AppError e) {

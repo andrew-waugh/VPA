@@ -29,6 +29,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
@@ -131,11 +132,13 @@ public final class V3Process {
      * @param veo	the file to parse
      * @param recordName the name of the Information Object to be produced
      * @param packageDir directory in which to create the packages
+     * @param pids VEO and IO PIDS from original processing. This must be null
+     * for the initial ingest
      * @return a VEOResult containing the results of the processing
      * @throws AppFatal if a system error occurred
      * @throws AppError if an unexpected error occurred processing this VEO
      */
-    public VEOResult process(JSONObject setMetadata, Path veo, String recordName, Path packageDir) throws AppFatal, AppError {
+    public VEOResult process(JSONObject setMetadata, Path veo, String recordName, Path packageDir, JSONObject pids) throws AppFatal, AppError {
         ArrayList<Event> events;
         ArrayList<InformationObject> ios;
         InformationObject io;
@@ -185,15 +188,23 @@ public final class V3Process {
                 ios = vcp.parse(xmlFile, veoDir, veo);
 
                 // assign the PIDs to the VEO and the Record Items
-                veoPID = ps.mint();
-                for (i = 0; i < ios.size(); i++) {
-                    ios.get(i).assignPIDs(veoPID);
+                if (pids == null) {
+                    veoPID = ps.mint();
+                    for (i = 0; i < ios.size(); i++) {
+                        ios.get(i).assignPIDs(veoPID);
+                    }
+                } else {
+                    veoPID = (String) pids.get("veoPID");
+                    JSONArray ja = (JSONArray) pids.get("ioPIDs");
+                    for (i = 0; i < ios.size(); i++) {
+                        ios.get(i).assignPIDs(veoPID, (String) ja.get(i));
+                    }
                 }
 
                 // create AMS, DAS, and SAMS packages
                 packages.createAMSPackage(setMetadata, ios, events);
                 packages.createSAMSPackage(ios);
-                packages.createDASPackage(veo, veoPID);
+                packages.createDASPackage(veo, veoPID, ios);
             }
         } catch (AppFatal ae) {
             throw ae;
@@ -747,7 +758,7 @@ public final class V3Process {
                     if (i == -1) {
                         cf.fileExt = "unknown";
                     } else {
-                        cf.fileExt = s.substring(i+1);
+                        cf.fileExt = s.substring(i + 1);
                     }
                     cf.sourceFileName = value;
 

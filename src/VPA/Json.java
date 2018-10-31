@@ -64,57 +64,85 @@ public class Json {
         StringBuffer sb;
         int i, j, indent;
         char ch;
-        boolean propValue;
+        boolean element;
+        boolean string;
+        boolean escape;
 
         sb = new StringBuffer();
         indent = 0;
-        propValue = true;
+        element = true;
+        string = false;
+        escape = false;
         for (i = 0; i < in.length(); i++) {
             ch = in.charAt(i);
-            switch (ch) {
-                case ':':
-                    sb.append(":");
-                    propValue = true;
-                    break;
-                case '{':
-                    indent++;
-                    sb.append("{");
-                    if (propValue) {
-                        sb.append("\n");
+            if (string) {
+                switch (ch) {
+                    case '"':
+                        sb.append("\"");
+                        if (!escape) {
+                            string = false;
+                        }
+                        escape = false;
+                        break;
+                    case '\\':
+                        sb.append("\\");
+                        escape = true;
+                        break;
+                    default:
+                        sb.append(ch);
+                        escape = false;
+                        break;
+                }
+            } else {
+                switch (ch) {
+                    case '"':
+                        sb.append("\"");
+                        string = true;
+                        break;
+                    case ':':
+                        sb.append(":");
+                        element = true;
+                        break;
+                    case '{':
+                        indent++;
+                        sb.append("{");
+                        if (element) {
+                            sb.append("\n");
+                            for (j = 0; j < indent; j++) {
+                                sb.append(" ");
+                            }
+                            element = false;
+                        }
+                        break;
+                    case '}':
+                        indent--;
+                        sb.append("}");
+                        element = false;
+                        break;
+                    case '[':
+                        indent++;
+                        sb.append("[\n");
                         for (j = 0; j < indent; j++) {
                             sb.append(" ");
                         }
-                        propValue = false;
-                    }
-                    break;
-                case '}':
-                    indent--;
-                    sb.append("}");
-                    propValue = false;
-                    break;
-                case '[':
-                    indent++;
-                    sb.append("[\n");
-                    for (j = 0; j < indent; j++) {
-                        sb.append(" ");
-                    }
-                    propValue = false;
-                    break;
-                case ']':
-                    indent--;
-                    sb.append("]");
-                    propValue = false;
-                    break;
-                case ',':
-                    sb.append(",\n");
-                    for (j = 0; j < indent; j++) {
-                        sb.append(" ");
-                    }
-                    propValue = false;
-                    break;
-                default:
-                    sb.append(ch);
-                    break;
+                        element = false;
+                        break;
+                    case ']':
+                        indent--;
+                        sb.append("]");
+                        element = false;
+                        break;
+                    case ',':
+                        sb.append(",\n");
+                        for (j = 0; j < indent; j++) {
+                            sb.append(" ");
+                        }
+                        element = false;
+                        break;
+                    default:
+                        sb.append(ch);
+                        break;
+                }
             }
         }
         return sb.toString();

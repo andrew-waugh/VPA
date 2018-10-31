@@ -221,6 +221,18 @@ public final class InformationObject {
     }
 
     /**
+     * Assign a PID to this IO
+     *
+     * @param veoPID the veoPID for this IO
+     * @param ioPID to ioPID for this IO
+     * @throws AppFatal if minting the PID failed
+     */
+    public void assignPIDs(String veoPID, String ioPID) {
+        this.veoPID = veoPID;
+        this.ioPID = ioPID;
+    }
+
+    /**
      * Represent the IO as a string
      *
      * @return a string representing the IO
@@ -439,7 +451,7 @@ public final class InformationObject {
         if (dateRegistered != null) {
             j1.put("dateRegistered", dateRegistered);
         }
-        */
+         */
         if (dates.size() > 0) {
             ja = new JSONArray();
             j1.put("dates", ja);

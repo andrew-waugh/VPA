@@ -38,7 +38,12 @@ package VPA;
  */
 import VERSCommon.AppFatal;
 import VERSCommon.AppError;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -65,7 +70,7 @@ public class DAIngest {
     static final String PASSWORD = "c3ca421a-0b8e-11e8-ab30-9b25d003b8dd";
     static final String PID_PREFIX = "20.500.12189";
     static final String TARGET_URL = "http://www.intersearch.com.au";
-    static final String AUTHOR  = "VPA";
+    static final String AUTHOR = "VPA";
 
     // global variables storing information about this export (as a whole)
     Path sourceDirectory;   // directory in which VEOs are found
@@ -353,6 +358,7 @@ public class DAIngest {
 
         if (Files.isRegularFile(f)) {
             process(f);
+            reprocess(f);
         } else {
             LOG.log(Level.INFO, "***Ignoring directory ''{0}''", new Object[]{f.toString()});
         }
@@ -474,6 +480,200 @@ public class DAIngest {
             // LOG.LOG(Level.SEVERE, "System error:\n{0}", new Object[]{e.getMessage()});
         } finally {
             System.gc();
+        }
+    }
+
+    /**
+     * Process a file containing a VEO and report on the results
+     *
+     * @param veo the file containing the VEO
+     */
+    public void reprocess(Path veo) {
+        VEOResult res;
+        Instant start, end;
+        long gap;
+        long memuseStart, memuseEnd;
+        int i;
+        String recordName;
+        Path veoDir, pidFile;
+        Runtime rt;
+        FileReader fr;
+        BufferedReader br;
+        StringBuilder sb;
+        String line;
+        String pids;
+
+        // check parameters
+        if (veo == null) {
+            return;
+        }
+
+        // reset, free memory, and print status
+        System.out.print(LocalDateTime.now().toString() + " Reprocessing: '" + veo.toString() + "' ");
+        // LOG.LOG(Level.INFO, "{0} Processing ''{1}''", new Object[]{((new Date()).getTime() / 1000), veo.toString()});
+
+        // create a outputDir in the outputDir in which to put the record content
+        String s = veo.getFileName().toString();
+        if ((i = s.lastIndexOf('.')) != -1) {
+            recordName = s.substring(0, i);
+        } else {
+            recordName = s;
+        }
+        recordName = recordName.replace('.', '-');
+        veoDir = outputDirectory.resolve(recordName);
+
+        // get the PIDs from the DAS package
+        pidFile = veoDir.resolve("DAS").resolve("PIDS.json");
+        try {
+            sb = new StringBuilder();
+            fr = new FileReader(pidFile.toFile());
+            br = new BufferedReader(fr);
+            while ((line = br.readLine()) != null) {
+                sb.append(line);
+            }
+            br.close();
+            fr.close();
+        } catch (FileNotFoundException e) {
+            System.out.println("PIDS.json file could not be found: " + e.getMessage());
+            return;
+        } catch (IOException e) {
+            System.out.println("Failed reading PIDS.json file: " + e.getMessage());
+            return;
+        }
+        pids = sb.toString();
+
+        veoDir = outputDirectory.resolve(recordName + "-r");
+        if (!deleteDirectory(veoDir)) {
+            System.out.println("VEO directory '" + veoDir.toString() + "' already exists & couldn't be deleted");
+            return;
+        }
+        try {
+            Files.createDirectory(veoDir);
+        } catch (IOException ioe) {
+            System.out.println("Packages.createDirs(): could not create VEO directory '" + veoDir.toString() + "': " + ioe.toString());
+            return;
+        }
+
+        // process the veo file
+        try {
+            rt = Runtime.getRuntime();
+            rt.gc();
+            memuseStart = rt.totalMemory() - rt.freeMemory();
+            start = Instant.now();
+            res = vp.reprocess(setMetadata, veo, veoDir, pids);
+            end = Instant.now();
+            gap = ChronoUnit.MILLIS.between(start, end);
+            rt.gc();
+            memuseEnd = rt.totalMemory() - rt.freeMemory();
+            System.out.print("(" + gap + " mS) ");
+            System.out.println(memuseEnd);
+            if (res != null) {
+                System.out.println("");
+                if (res.success) {
+                    System.out.print("SUCCESS");
+                } else {
+                    System.out.print("FAILED");
+                }
+                if (res.veoType == VEOResult.V2_VEO) {
+                    System.out.print(" (V2 VEO");
+                } else if (res.veoType == VEOResult.V3_VEO) {
+                    System.out.print(" (V3 VEO");
+                } else {
+                    System.out.print(" (UNKNOWN VEO");
+                }
+                System.out.print(" ");
+                if (res.timeProcStart != null) {
+                    System.out.print(res.timeProcStart);
+                }
+                System.out.print(" to ");
+                if (res.timeProcEnded != null) {
+                    System.out.print(res.timeProcEnded);
+                }
+                System.out.println(")");
+                if (res.result != null) {
+                    System.out.println(res.result);
+                }
+
+                try {
+                    statbw.write(recordName);
+                    statbw.write(",");
+                    statbw.write(Long.toString(Files.size(veo) / 1024));
+                    statbw.write(",");
+                    statbw.write(Long.toString(gap));
+                    statbw.write(",");
+                    statbw.write(Long.toString(memuseEnd - memuseStart));
+                    statbw.write(",");
+                    statbw.write(Long.toString(memuseEnd));
+                    statbw.write("\n");
+                    statbw.flush();
+                } catch (IOException ioe) {
+                    // ignore
+                }
+
+                // LOG.LOG(Level.INFO, "SUCCESS! VEO ''{0}''\n{1}", new Object[]{veo.toString(), res.result});
+            } else {
+                LOG.log(Level.INFO, "SUCCESS VEO ''{0}''", new Object[]{veo.toString()});
+            }
+            exportCount++;
+            res = null;
+        } catch (AppError e) {
+            System.out.println("FAILED");
+            System.out.println(e.getMessage());
+            // LOG.LOG(Level.WARNING, "Processing VEO ''{0}'' failed because:\n{1}", new Object[]{veo.toString(), e.getMessage()});
+        } catch (AppFatal e) {
+            System.out.println("UNKNOWN RESULT - VPA Failed");
+            System.out.println(e.getMessage());
+            // LOG.LOG(Level.SEVERE, "System error:\n{0}", new Object[]{e.getMessage()});
+        } finally {
+            System.gc();
+        }
+
+        // compare the old and new SAMS directories
+        veoDir = outputDirectory.resolve(recordName);
+        pidFile = veoDir.resolve("DAS").resolve("PIDS.json");
+        try {
+            sb = new StringBuilder();
+            fr = new FileReader(pidFile.toFile());
+            br = new BufferedReader(fr);
+            while ((line = br.readLine()) != null) {
+                sb.append(line);
+            }
+            br.close();
+            fr.close();
+        } catch (FileNotFoundException e) {
+            System.out.println("PIDS.json file could not be found: " + e.getMessage());
+            return;
+        } catch (IOException e) {
+            System.out.println("Failed reading PIDS.json file: " + e.getMessage());
+            return;
+        }
+        pids = sb.toString();
+        veoDir = outputDirectory.resolve(recordName+"-r");
+        pidFile = veoDir.resolve("DAS").resolve("PIDS.json");
+        try {
+            sb = new StringBuilder();
+            fr = new FileReader(pidFile.toFile());
+            br = new BufferedReader(fr);
+            while ((line = br.readLine()) != null) {
+                sb.append(line);
+            }
+            br.close();
+            fr.close();
+        } catch (FileNotFoundException e) {
+            System.out.println("PIDS.json file could not be found: " + e.getMessage());
+            return;
+        } catch (IOException e) {
+            System.out.println("Failed reading PIDS.json file: " + e.getMessage());
+            return;
+        }
+        if (pids.compareTo(sb.toString()) == 0) {
+            System.out.println("PIDS.json identical");
+        } else {
+            System.out.println("PIDS.json differ");
+            System.out.println("First process:");
+            System.out.println(pids);
+            System.out.println("Reprocess:");
+            System.out.println(sb.toString());
         }
     }
 

@@ -168,7 +168,7 @@ public final class Packages {
         osw = new OutputStreamWriter(bos);
         try {
             osw.write("VEO PID,Seq Nbr,RI PID,SAMS URI,File name rel to SAMS dir,MIME type\r\n");
-            
+
             // go through each Information Object...
             for (i = 0; i < ios.size(); i++) {
                 io = ios.get(i);
@@ -184,7 +184,7 @@ public final class Packages {
 
                             // move the file specified by the content file to the SAMS directory
                             p = moveFile(cf.rootFileLocn, cf.fileLocation);
-                            osw.write(io.veoPID + "," + cf.seqNbr + ","+ io.ioPID + "," + cf.getSAMSuri() + ",\"" + p.toString().replace('\\', '/') + "\",\"" + ff.fileExt2MimeType(cf.fileExt) + "\"\r\n");
+                            osw.write(io.veoPID + "," + cf.seqNbr + "," + io.ioPID + "," + cf.getSAMSuri() + ",\"" + p.toString().replace('\\', '/') + "\",\"" + ff.fileExt2MimeType(cf.fileExt) + "\"\r\n");
                         }
                     }
                 }
@@ -213,11 +213,10 @@ public final class Packages {
     /**
      * Move a file from its current location to the SAMS package. The file
      * root/file is the source location; and the file is the destination
-     * location relative to the SAMS directory.
-     * Note that multiple VEO content files can refer to the same
-     * physical file in a content file. In this case, we move the file once to
-     * the SAMS directory and just return the path of the SAMS file in
-     * subsequent calls for the same file.
+     * location relative to the SAMS directory. Note that multiple VEO content
+     * files can refer to the same physical file in a content file. In this
+     * case, we move the file once to the SAMS directory and just return the
+     * path of the SAMS file in subsequent calls for the same file.
      *
      * @param source the Path of the file to be moved
      * @return the Path of the relocated file relative to the SAMS directory
@@ -253,7 +252,7 @@ public final class Packages {
         }
         return samsDir.relativize(p2);
     }
-    
+
     /**
      * Construct a CFU to identify a binary file in the SAMS
      *
@@ -288,13 +287,18 @@ public final class Packages {
      *
      * @param veo the original VEO
      * @param veoPID the persistent identifier for the VEO
+     * @param ios list of IOs
      * @throws AppError
      */
-    public void createDASPackage(Path veo, String veoPID) throws AppError {
+    public void createDASPackage(Path veo, String veoPID, ArrayList<InformationObject> ios) throws AppError {
         FileOutputStream fos;
         BufferedOutputStream bos;
         OutputStreamWriter osw;
         Path p;
+        JSONObject j1, j2;
+        JSONArray ja1;
+        int i;
+        InformationObject io;
 
         // copy original VEO to DA package
         try {
@@ -303,6 +307,48 @@ public final class Packages {
             throw new AppError("Packages.createDASPackage(): Failed copying original VEO to DAS package: " + ioe.getMessage());
         }
 
+        // output the PID table
+        j1 = new JSONObject();
+        j1.put("veoPID", veoPID);
+
+        ja1 = new JSONArray();
+        for (i = 0; i < ios.size(); i++) {
+            io = ios.get(i);
+            ja1.add(io.ioPID);
+        }
+        j1.put("ioPIDs", ja1);
+
+        p = dasDir.resolve("PIDS.json");
+        try {
+            fos = new FileOutputStream(p.toFile());
+        } catch (FileNotFoundException fnfe) {
+            throw new AppError("Packages.createDASPackage(): Couldn't create PIDS.json file as: " + fnfe.getMessage());
+        }
+        bos = new BufferedOutputStream(fos);
+        osw = new OutputStreamWriter(bos);
+        try {
+            osw.write(Json.prettyPrintJSON(j1.toJSONString()));
+        } catch (IOException ioe) {
+            throw new AppError("Packages.createDASPackage(): Failed writing to the PIDS.json file as: " + ioe.getMessage());
+        } finally {
+            try {
+                osw.close();
+            } catch (IOException ioe) {
+                // ignore
+            }
+            try {
+                bos.close();
+            } catch (IOException ioe) {
+                // ignore
+            }
+            try {
+                fos.close();
+            } catch (IOException ioe) {
+                // ignore
+            }
+        }
+
+        /*
         // output the PID table
         p = dasDir.resolve("PID.cvs");
         try {
@@ -333,6 +379,6 @@ public final class Packages {
                 // ignore
             }
         }
-
+        */
     }
 }
