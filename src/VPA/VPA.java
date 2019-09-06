@@ -152,8 +152,7 @@ public final class VPA {
      *
      * @param setMetadata metadata about the set as a whole
      * @param veo	the file to parse
-     * @param recordName the name of the Information Object to be produced
-     * @param packageDir directory in which to create the packages
+     * @param veoOutputDir directory in which to place the VEO output
      * @param pids VEO and IO PIDS from original processing.
      * @return a VEOResult containing the results of the processing
      * @throws AppFatal if a system error occurred
