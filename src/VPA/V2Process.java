@@ -155,7 +155,9 @@ public class V2Process {
             out = new StringWriter();
             p = Paths.get(packageDir.toString(), "abreviatedVEO.xml");
             createAbbrVEO(p);
-            veoc.vpaTestVEO(veo, p, out);
+            if (!veoc.vpaTestVEO(veo, p, out)) {
+                return new VEOResult(recordName, VEOResult.V2_VEO, false, out.toString(), null, started);
+            }
 
             // add ingest event
             events.add(Event.Ingest());
