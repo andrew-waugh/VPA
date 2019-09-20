@@ -395,7 +395,7 @@ public class DAIngest {
         } else {
             recordName = s;
         }
-        recordName = recordName.replace('.', '-');
+        recordName = recordName.replace('.', '-').trim();
         veoDir = outputDirectory.resolve(recordName);
         if (!deleteDirectory(veoDir)) {
             System.out.println("VEO directory '" + veoDir.toString() + "' already exists & couldn't be deleted");
@@ -519,7 +519,7 @@ public class DAIngest {
         } else {
             recordName = s;
         }
-        recordName = recordName.replace('.', '-');
+        recordName = recordName.replace('.', '-').trim();
         veoDir = outputDirectory.resolve(recordName);
 
         // get the PIDs from the DAS package
