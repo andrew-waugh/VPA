@@ -357,8 +357,9 @@ public class DAIngest {
         }
 
         if (Files.isRegularFile(f)) {
-            process(f);
-            reprocess(f);
+            if (process(f)) {
+                reprocess(f);
+            }
         } else {
             LOG.log(Level.INFO, "***Ignoring directory ''{0}''", new Object[]{f.toString()});
         }
@@ -369,7 +370,7 @@ public class DAIngest {
      *
      * @param veo the file containing the VEO
      */
-    public void process(Path veo) {
+    public boolean process(Path veo) {
         VEOResult res;
         Instant start, end;
         long gap;
@@ -378,10 +379,11 @@ public class DAIngest {
         String recordName;
         Path veoDir;
         Runtime rt;
+        boolean suceeded;
 
         // check parameters
         if (veo == null) {
-            return;
+            return false;
         }
 
         // reset, free memory, and print status
@@ -399,13 +401,13 @@ public class DAIngest {
         veoDir = outputDirectory.resolve(recordName);
         if (!deleteDirectory(veoDir)) {
             System.out.println("VEO directory '" + veoDir.toString() + "' already exists & couldn't be deleted");
-            return;
+            return false;
         }
         try {
             Files.createDirectory(veoDir);
         } catch (IOException ioe) {
             System.out.println("Packages.createDirs(): could not create VEO directory '" + veoDir.toString() + "': " + ioe.toString());
-            return;
+            return false;
         }
 
         // process the veo file
@@ -425,8 +427,10 @@ public class DAIngest {
                 System.out.println("");
                 if (res.success) {
                     System.out.print("SUCCESS");
+                    suceeded = true;
                 } else {
                     System.out.print("FAILED");
+                    suceeded = false;
                 }
                 if (res.veoType == VEOResult.V2_VEO) {
                     System.out.print(" (V2 VEO");
@@ -467,20 +471,24 @@ public class DAIngest {
                 // LOG.LOG(Level.INFO, "SUCCESS! VEO ''{0}''\n{1}", new Object[]{veo.toString(), res.result});
             } else {
                 LOG.log(Level.INFO, "SUCCESS VEO ''{0}''", new Object[]{veo.toString()});
+                suceeded = false;
             }
             exportCount++;
             res = null;
         } catch (AppError e) {
             System.out.println("FAILED");
             System.out.println(e.getMessage());
+            suceeded = false;
             // LOG.LOG(Level.WARNING, "Processing VEO ''{0}'' failed because:\n{1}", new Object[]{veo.toString(), e.getMessage()});
         } catch (AppFatal e) {
             System.out.println("UNKNOWN RESULT - VPA Failed");
             System.out.println(e.getMessage());
+            suceeded = false;
             // LOG.LOG(Level.SEVERE, "System error:\n{0}", new Object[]{e.getMessage()});
         } finally {
             System.gc();
         }
+        return suceeded;
     }
 
     /**
@@ -648,7 +656,7 @@ public class DAIngest {
             return;
         }
         pids = sb.toString();
-        veoDir = outputDirectory.resolve(recordName+"-r");
+        veoDir = outputDirectory.resolve(recordName + "-r");
         pidFile = veoDir.resolve("DAS").resolve("PIDS.json");
         try {
             sb = new StringBuilder();
