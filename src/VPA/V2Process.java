@@ -959,6 +959,11 @@ public class V2Process {
                             LOG.log(Level.INFO, "V2Process.V2VEOParser.endElement(): failed getting size of file: {0}", ioe.getMessage());
                             encoding.fileSize = 0;
                         }
+                        
+                        // complain if vers:DocumentData is empty
+                        if (encoding.fileSize == 0) {
+                            throw new SAXException("Empty vers:DocumentData element");
+                        }
                     }
                     break;
                 default:
