@@ -369,6 +369,7 @@ public class DAIngest {
      * Process a file containing a VEO and report on the results
      *
      * @param veo the file containing the VEO
+     * @return true if success
      */
     public boolean process(Path veo) {
         VEOResult res;
