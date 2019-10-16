@@ -451,6 +451,8 @@ public class DAIngest {
                 System.out.println(")");
                 if (res.result != null) {
                     System.out.println(res.result);
+                } else {
+                    System.out.println("Nil result");
                 }
 
                 try {
@@ -471,7 +473,7 @@ public class DAIngest {
 
                 // LOG.LOG(Level.INFO, "SUCCESS! VEO ''{0}''\n{1}", new Object[]{veo.toString(), res.result});
             } else {
-                LOG.log(Level.INFO, "SUCCESS VEO ''{0}''", new Object[]{veo.toString()});
+                LOG.log(Level.INFO, "SUCCESS VEO (NULL)''{0}''", new Object[]{veo.toString()});
                 suceeded = false;
             }
             exportCount++;
