@@ -764,7 +764,8 @@ public final class V3Process {
 
                     // get file size
                     try {
-                        cf.fileSize = Files.size(cf.rootFileLocn);
+                        Path p1 = Paths.get(".").resolve(veoDir).resolve(cf.fileLocation);
+                        cf.fileSize = Files.size(p1.toAbsolutePath().normalize());
                     } catch (IOException ioe) {
                         LOG.log(Level.INFO, "V2Process.V2VEOParser.endElement(): failed getting size of file: ", ioe.getMessage());
                         cf.fileSize = 0;
