@@ -145,7 +145,7 @@ public final class V3Process {
         Event e;
         Path xmlFile;
         String veoPID;
-        Path veoDir;
+        VEOAnalysis.TestVEOResult tvr;
         int i;
         Instant started;
         boolean success;
@@ -168,24 +168,25 @@ public final class V3Process {
 
         ios = null;
         events = null;
+        tvr = null;
         success = true;
         try {
             // unpack & test the VEO
-            veoDir = va.testVEO(veo.toString(), packageDir);
-            success = va.isErrorFree();
+            tvr = va.testVEO(veo.toString(), packageDir);
+            success = !tvr.hasErrors;
 
             // if VEO tested ok, do the rest of the processing...
             if (success) {
 
                 // parse the VEOHistory.xml file & add the ingest and custody accepted events
-                xmlFile = veoDir.resolve("VEOHistory.xml");
+                xmlFile = tvr.veoDir.resolve("VEOHistory.xml");
                 events = vhp.parse(xmlFile);
                 events.add(Event.Ingest());
                 events.add(Event.CustodyAccepted());
 
                 // parse the VEOContent.xml file and get the Record Items (IOs)
-                xmlFile = veoDir.resolve("VEOContent.xml");
-                ios = vcp.parse(xmlFile, veoDir, veo);
+                xmlFile = tvr.veoDir.resolve("VEOContent.xml");
+                ios = vcp.parse(xmlFile, tvr.veoDir, veo);
 
                 // assign the PIDs to the VEO and the Record Items
                 if (pids == null) {
@@ -202,7 +203,7 @@ public final class V3Process {
                 }
 
                 // create AMS, DAS, and SAMS packages
-                packages.createAMSPackage(setMetadata, ios, events);
+                packages.createAMSPackage(setMetadata, tvr.uniqueID, ios, events);
                 packages.createSAMSPackage(ios);
                 packages.createDASPackage(veo, veoPID, ios);
             }
@@ -227,6 +228,10 @@ public final class V3Process {
                     e.free();
                 }
                 events.clear();
+            }
+            if (tvr != null) {
+                tvr.free();
+                tvr = null;
             }
         }
         return new VEOResult(recordName, VEOResult.V3_VEO, success, log1.toString(), packageDir, started);

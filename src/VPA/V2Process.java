@@ -50,6 +50,7 @@ public class V2Process {
     private String veoFormatDesc;         // VEO Format Description from currently parsed VEO
     private String version;               // version from currently parsed VEO
     private final ArrayList<String> sigBlock; // signature blocks from currently parsed VEO
+    private String uniqueID;              // unique ID of this VEO (the first signature)
     private final ArrayList<String> lockSigBlock; // lock signature blocks from currently parsed VEO
     private String signedObject;          // signedObject from currently parsed VEO
 
@@ -85,6 +86,7 @@ public class V2Process {
         veoFormatDesc = null;
         version = null;
         sigBlock = new ArrayList<>();
+        uniqueID = null;
         lockSigBlock = new ArrayList<>();
         signedObject = null;
     }
@@ -147,6 +149,7 @@ public class V2Process {
             veoFormatDesc = null;
             version = null;
             sigBlock.clear();
+            uniqueID = null;
             lockSigBlock.clear();
             signedObject = null;
             parser.parse(veo, packageDir, io, events);
@@ -190,7 +193,7 @@ public class V2Process {
             }
 
             // create AMS and SAMS outputs
-            packages.createAMSPackage(setMetadata, ios, events);
+            packages.createAMSPackage(setMetadata, uniqueID, ios, events);
             packages.createSAMSPackage(ios);
             packages.createDASPackage(veo, veoPID, ios);
         } catch (AppFatal af) {
@@ -209,6 +212,7 @@ public class V2Process {
             veoFormatDesc = null;
             version = null;
             sigBlock.clear();
+            uniqueID = null;
             lockSigBlock.clear();
             signedObject = null;
         }
@@ -422,6 +426,11 @@ public class V2Process {
                 case "vers:VERSEncapsulatedObject/vers:LockSignatureBlock":
                 case "vers:VERSEncapsulatedObject/vers:SignedObject":
                     return new HandleElement(HandleElement.ELEMENT_TO_STRING);
+                case "vers:VERSEncapsulatedObject/vers:SignatureBlock/vers:Signature":
+                    if (uniqueID == null) {
+                        return new HandleElement(HandleElement.VALUE_TO_STRING);
+                    }
+                    break;
                 default:
             }
 
@@ -681,6 +690,11 @@ public class V2Process {
                     return;
                 case "vers:VERSEncapsulatedObject/vers:SignatureBlock":
                     sigBlock.add(element);
+                    return;
+                case "vers:VERSEncapsulatedObject/vers:SignatureBlock/vers:Signature":
+                    if (uniqueID == null) {
+                        uniqueID = value;
+                    }
                     return;
                 case "vers:VERSEncapsulatedObject/vers:LockSignatureBlock":
                     lockSigBlock.add(element);
@@ -959,7 +973,7 @@ public class V2Process {
                             LOG.log(Level.INFO, "V2Process.V2VEOParser.endElement(): failed getting size of file: {0}", ioe.getMessage());
                             encoding.fileSize = 0;
                         }
-                        
+
                         // complain if vers:DocumentData is empty
                         if (encoding.fileSize == 0) {
                             throw new SAXException("Empty vers:DocumentData element");

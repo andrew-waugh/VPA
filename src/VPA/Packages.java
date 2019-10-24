@@ -75,11 +75,12 @@ public final class Packages {
      * Create an AMS Package. This contains IO.xml files created from the VEO
      *
      * @param setMetadata JSON metadata about set as a whole
+     * @param uniqueID a string containing a unique handle for this VEO
      * @param ios list of information object files
      * @param events list of events (to be added to first IO)
      * @throws AppError
      */
-    public void createAMSPackage(JSONObject setMetadata, ArrayList<InformationObject> ios, ArrayList<Event> events) throws AppError {
+    public void createAMSPackage(JSONObject setMetadata, String uniqueID, ArrayList<InformationObject> ios, ArrayList<Event> events) throws AppError {
         FileOutputStream fos;
         BufferedOutputStream bos;
         OutputStreamWriter osw;
@@ -98,6 +99,7 @@ public final class Packages {
             // build JSON
             j1 = new JSONObject();
             j1.put("set", setMetadata);
+            j1.put("uniqueID", uniqueID);
             j1.put("io", io.toJSON());
             if (events.size() > 0) {
                 ja1 = new JSONArray();
