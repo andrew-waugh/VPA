@@ -160,7 +160,7 @@ public final class V3Process {
         if (packageDir == null) {
             throw new AppError("V3Process.process(): Passed null package directory");
         }
-        LOG.log(Level.INFO, "Processing ''{0}''", new Object[]{veo.toAbsolutePath().toString()});
+        LOG.log(Level.INFO, "Processing ''{0}''", new Object[]{veo.normalize().toAbsolutePath().toString()});
         started = Instant.now();
 
         // reset log1

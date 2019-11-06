@@ -334,7 +334,7 @@ public class DAIngest {
         // check that file or directory exists
         if (!Files.exists(f)) {
             if (verbose) {
-                LOG.log(Level.WARNING, "***File ''{0}'' does not exist", new Object[]{f.toString()});
+                LOG.log(Level.WARNING, "***File ''{0}'' does not exist", new Object[]{f.normalize().toString()});
             }
             return;
         }
@@ -342,7 +342,7 @@ public class DAIngest {
         // if file is a directory, go through directory and test all the files
         if (Files.isDirectory(f)) {
             if (verbose) {
-                LOG.log(Level.INFO, "***Processing directory ''{0}''", new Object[]{f.toString()});
+                LOG.log(Level.INFO, "***Processing directory ''{0}''", new Object[]{f.normalize().toString()});
             }
             try {
                 ds = Files.newDirectoryStream(f);
@@ -351,7 +351,7 @@ public class DAIngest {
                 }
                 ds.close();
             } catch (IOException e) {
-                LOG.log(Level.WARNING, "Failed to process directory ''{0}'': {1}", new Object[]{f.toString(), e.getMessage()});
+                LOG.log(Level.WARNING, "Failed to process directory ''{0}'': {1}", new Object[]{f.normalize().toString(), e.getMessage()});
             }
             return;
         }
@@ -361,7 +361,7 @@ public class DAIngest {
                 reprocess(f);
             }
         } else {
-            LOG.log(Level.INFO, "***Ignoring directory ''{0}''", new Object[]{f.toString()});
+            LOG.log(Level.INFO, "***Ignoring directory ''{0}''", new Object[]{f.normalize().toString()});
         }
     }
 
@@ -388,7 +388,7 @@ public class DAIngest {
         }
 
         // reset, free memory, and print status
-        System.out.print(LocalDateTime.now().toString() + " Processing: '" + veo.toString() + "' ");
+        System.out.print(LocalDateTime.now().toString() + " Processing: '" + veo.normalize().toString() + "' ");
         // LOG.LOG(Level.INFO, "{0} Processing ''{1}''", new Object[]{((new Date()).getTime() / 1000), veo.toString()});
 
         // create a outputDir in the outputDir in which to put the record content
@@ -401,13 +401,13 @@ public class DAIngest {
         recordName = recordName.replace('.', '-').trim();
         veoDir = outputDirectory.resolve(recordName);
         if (!deleteDirectory(veoDir)) {
-            System.out.println("VEO directory '" + veoDir.toString() + "' already exists & couldn't be deleted");
+            System.out.println("VEO directory '" + veoDir.normalize().toString() + "' already exists & couldn't be deleted");
             return false;
         }
         try {
             Files.createDirectory(veoDir);
         } catch (IOException ioe) {
-            System.out.println("Packages.createDirs(): could not create VEO directory '" + veoDir.toString() + "': " + ioe.toString());
+            System.out.println("Packages.createDirs(): could not create VEO directory '" + veoDir.normalize().toString() + "': " + ioe.toString());
             return false;
         }
 
@@ -473,7 +473,7 @@ public class DAIngest {
 
                 // LOG.LOG(Level.INFO, "SUCCESS! VEO ''{0}''\n{1}", new Object[]{veo.toString(), res.result});
             } else {
-                LOG.log(Level.INFO, "SUCCESS VEO (NULL)''{0}''", new Object[]{veo.toString()});
+                System.out.println("FAILED - VEO processing returned null");
                 suceeded = false;
             }
             exportCount++;
