@@ -152,6 +152,8 @@ public final class V3Process {
         int i;
         Instant started;
         boolean success;
+        String result;
+        String logResult;
 
         // check parameters
         if (veo == null) {
@@ -173,9 +175,11 @@ public final class V3Process {
         events = null;
         tvr = null;
         success = true;
+        result = null;
         try {
             // unpack & test the VEO
             tvr = va.testVEO(veo.toString(), packageDir);
+            result = tvr.result;
             success = !tvr.hasErrors;
 
             // if VEO tested ok, do the rest of the processing...
@@ -242,7 +246,14 @@ public final class V3Process {
                 tvr = null;
             }
         }
-        return new VEOResult(recordName, VEOResult.V3_VEO, success, log1.toString(), packageDir, started);
+        if (result == null) {
+            result = "";
+        }
+        logResult = log1.toString();
+        if (logResult != null && !logResult.equals("") && !logResult.trim().equals(" ")) {
+            result = result + "\n" + logResult;
+        }
+        return new VEOResult(recordName, VEOResult.V3_VEO, success, result, packageDir, started);
     }
 
     /**
