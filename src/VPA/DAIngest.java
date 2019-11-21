@@ -83,6 +83,7 @@ public class DAIngest {
     String userId;          // user performing the conversion
     boolean useRealHandleService; // where to get handles from
     String setMetadata;     // A string containing metadata about the set
+    boolean light;          // true if only testing the VEO, not processing it
 
     FileWriter statfw;      // file writer for statistics
     BufferedWriter statbw;
@@ -111,6 +112,7 @@ public class DAIngest {
         debug = false;
         verbose = false;
         rdfIdPrefix = null;
+        light = false;
         userId = System.getProperty("user.name");
         if (userId == null) {
             userId = "Unknown user";
@@ -124,7 +126,7 @@ public class DAIngest {
         configure(args);
 
         // set up processor
-        vp = new VPA(outputDirectory, supportDir, rdfIdPrefix, LOG.getLevel(), useRealHandleService, PID_SERVER_URL, USER_ID, PASSWORD, PID_PREFIX, TARGET_URL, AUTHOR);
+        vp = new VPA(outputDirectory, supportDir, rdfIdPrefix, LOG.getLevel(), useRealHandleService, PID_SERVER_URL, USER_ID, PASSWORD, PID_PREFIX, TARGET_URL, AUTHOR, light);
 
         // open statistics
         try {
@@ -220,6 +222,12 @@ public class DAIngest {
                         i++;
                         break;
 
+                    // '-lite' specifies just test the VEO, don't process it
+                    case "-lite":
+                        i++;
+                        light = true;
+                        break;
+
                     default:
                         // if unrecognised arguement, print help string and exit
                         if (args[i].charAt(0) == '-') {
@@ -255,6 +263,9 @@ public class DAIngest {
         LOG.log(Level.INFO, "Source directory is ''{0}''", new Object[]{sourceDirectory.toString()});
         LOG.log(Level.INFO, "Output directory is ''{0}''", new Object[]{outputDirectory.toString()});
         LOG.log(Level.INFO, "User id to be logged: ''{0}''", new Object[]{userId});
+        if (light) {
+            LOG.log(Level.INFO, "Light mode");
+        }
     }
 
     /**
@@ -357,7 +368,7 @@ public class DAIngest {
         }
 
         if (Files.isRegularFile(f)) {
-            if (process(f)) {
+            if (process(f) && !light) {
                 reprocess(f);
             }
         } else {
@@ -417,7 +428,7 @@ public class DAIngest {
             rt.gc();
             memuseStart = rt.totalMemory() - rt.freeMemory();
             start = Instant.now();
-            res = vp.process(setMetadata, veo, veoDir);
+            res = vp.process(setMetadata, veo, veoDir, null);
             end = Instant.now();
             gap = ChronoUnit.MILLIS.between(start, end);
             rt.gc();
@@ -425,52 +436,52 @@ public class DAIngest {
             System.out.print("(" + gap + " mS) ");
             System.out.println(memuseEnd);
             if (res != null) {
-                System.out.println("");
-                if (res.success) {
-                    System.out.print("SUCCESS");
-                    suceeded = true;
-                } else {
-                    System.out.print("FAILED");
-                    suceeded = false;
-                }
-                if (res.veoType == VEOResult.V2_VEO) {
-                    System.out.print(" (V2 VEO");
-                } else if (res.veoType == VEOResult.V3_VEO) {
-                    System.out.print(" (V3 VEO");
-                } else {
-                    System.out.print(" (UNKNOWN VEO");
-                }
-                System.out.print(" ");
-                if (res.timeProcStart != null) {
-                    System.out.print(res.timeProcStart);
-                }
-                System.out.print(" to ");
-                if (res.timeProcEnded != null) {
-                    System.out.print(res.timeProcEnded);
-                }
-                System.out.println(")");
-                if (res.result != null) {
-                    System.out.println(res.result);
-                } else {
-                    System.out.println("Nil result");
-                }
+                suceeded = res.success;
+                if (!light || !suceeded) {
+                    System.out.println("");
+                    if (suceeded) {
+                        System.out.print("SUCCESS");
+                    } else {
+                        System.out.print("FAILED");
+                    }
+                    if (res.veoType == VEOResult.V2_VEO) {
+                        System.out.print(" (V2 VEO");
+                    } else if (res.veoType == VEOResult.V3_VEO) {
+                        System.out.print(" (V3 VEO");
+                    } else {
+                        System.out.print(" (UNKNOWN VEO");
+                    }
+                    System.out.print(" ");
+                    if (res.timeProcStart != null) {
+                        System.out.print(res.timeProcStart);
+                    }
+                    System.out.print(" to ");
+                    if (res.timeProcEnded != null) {
+                        System.out.print(res.timeProcEnded);
+                    }
+                    System.out.println(")");
+                    if (res.result != null) {
+                        System.out.println(res.result);
+                    } else {
+                        System.out.println("Nil result");
+                    }
 
-                try {
-                    statbw.write(recordName);
-                    statbw.write(",");
-                    statbw.write(Long.toString(Files.size(veo) / 1024));
-                    statbw.write(",");
-                    statbw.write(Long.toString(gap));
-                    statbw.write(",");
-                    statbw.write(Long.toString(memuseEnd - memuseStart));
-                    statbw.write(",");
-                    statbw.write(Long.toString(memuseEnd));
-                    statbw.write("\n");
-                    statbw.flush();
-                } catch (IOException ioe) {
-                    // ignore
+                    try {
+                        statbw.write(recordName);
+                        statbw.write(",");
+                        statbw.write(Long.toString(Files.size(veo) / 1024));
+                        statbw.write(",");
+                        statbw.write(Long.toString(gap));
+                        statbw.write(",");
+                        statbw.write(Long.toString(memuseEnd - memuseStart));
+                        statbw.write(",");
+                        statbw.write(Long.toString(memuseEnd));
+                        statbw.write("\n");
+                        statbw.flush();
+                    } catch (IOException ioe) {
+                        // ignore
+                    }
                 }
-
                 // LOG.LOG(Level.INFO, "SUCCESS! VEO ''{0}''\n{1}", new Object[]{veo.toString(), res.result});
             } else {
                 System.out.println("FAILED - VEO processing returned null");
@@ -490,6 +501,12 @@ public class DAIngest {
             // LOG.LOG(Level.SEVERE, "System error:\n{0}", new Object[]{e.getMessage()});
         } finally {
             System.gc();
+
+            if (light) {
+                if (!deleteDirectory(veoDir)) {
+                    System.out.println("VEO directory '" + veoDir.normalize().toString() + "' couldn't be deleted");
+                }
+            }
         }
         return suceeded;
     }

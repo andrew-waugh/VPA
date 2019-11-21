@@ -53,6 +53,7 @@ public class V2Process {
     private String uniqueID;              // unique ID of this VEO (the first signature)
     private final ArrayList<String> lockSigBlock; // lock signature blocks from currently parsed VEO
     private String signedObject;          // signedObject from currently parsed VEO
+    private boolean light;                // if true, only test VEO, don't process it
 
     private final static Logger LOG = Logger.getLogger("VPA.V2Process");
 
@@ -65,9 +66,10 @@ public class V2Process {
      * @param supportDir directory where the versV2.dtd file is located
      * @param packages methods that generate the packages
      * @param logLevel logging level (INFO = verbose, FINE = debug)
+     * @param light true if only test the VEO, don't process it
      * @throws AppFatal if a fatal error occurred
      */
-    public V2Process(PIDService ps, FileFormat ff, String rdfIdPrefix, Path supportDir, Packages packages, Level logLevel) throws AppFatal {
+    public V2Process(PIDService ps, FileFormat ff, String rdfIdPrefix, Path supportDir, Packages packages, Level logLevel, boolean light) throws AppFatal {
         Path dtd;
 
         LOG.setLevel(null);
@@ -75,6 +77,7 @@ public class V2Process {
         this.ps = ps;
         this.rdfIdPrefix = rdfIdPrefix;
         this.packages = packages;
+        this.light = light;
         dtd = supportDir.resolve("versV2.dtd");
 
         // set up headless validation
@@ -160,6 +163,11 @@ public class V2Process {
             createAbbrVEO(p);
             if (!veoc.vpaTestVEO(veo, p, out)) {
                 return new VEOResult(recordName, VEOResult.V2_VEO, false, out.toString(), null, started);
+            }
+            
+            // are we just testing the VEO?
+            if (light) {
+                return new VEOResult(recordName, VEOResult.V2_VEO, true, out.toString(), null, started);
             }
 
             // add ingest event
@@ -325,6 +333,7 @@ public class V2Process {
         private Event event;                // current vers:Event being parsed
         private Path veoDir;                // directory in which to put content
         private Identifier id;              // identifier being read
+        private boolean light;              // don't extract document data
 
         public V2VEOParser() throws AppFatal {
             clear();
@@ -521,6 +530,12 @@ public class V2Process {
                     // except if it is an original V1 VEO
                     if (versid == null) {
                         versid = "Revision-1-Document-" + docNo + "-Encoding-" + encNo + "-DocumentData";
+                    }
+                    
+                    // if light, don't include the DocumentData
+                    if (light) {
+                        he = null;
+                        break;
                     }
 
                     // only include this DocumentData if it is in the final revision

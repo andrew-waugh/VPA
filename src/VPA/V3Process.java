@@ -41,6 +41,7 @@ public final class V3Process {
     private final VEOContentParser vcp;   // Parser to parse the VEOContent.xml file
     private final VEOHistoryParser vhp;   // Parser to parse the VEOHistory.xml file
     private final PIDService ps;          // Class to encapsulate the PID service
+    private final boolean light;          // true if test VEO only, do not process it
 
     // global variables storing information about this export (as a whole)
     private final StringBuilder log1;      // place to capture logging
@@ -56,14 +57,16 @@ public final class V3Process {
      * found
      * @param packages methods used to create the packages
      * @param logLevel logging level (INFO = verbose, FINE = debug)
+     * @param light true if testing VEO only, not processing it
      * @throws AppFatal if a system error occurred
      */
-    public V3Process(PIDService ps, Path outputDir, Path schemaDir, Packages packages, Level logLevel) throws AppFatal {
+    public V3Process(PIDService ps, Path outputDir, Path schemaDir, Packages packages, Level logLevel, boolean light) throws AppFatal {
         LogHandler handlr;
         boolean verbose, debug;
 
         this.ps = ps;
         this.packages = packages;
+        this.light = light;
 
         // set up logging
         log1 = new StringBuilder();
@@ -187,6 +190,11 @@ public final class V3Process {
                 // parse the VEOContent.xml file and get the Record Items (IOs)
                 xmlFile = tvr.veoDir.resolve("VEOContent.xml");
                 ios = vcp.parse(xmlFile, tvr.veoDir, veo);
+                
+                // go no further if light...
+                if (light) {
+                    return new VEOResult(recordName, VEOResult.V3_VEO, success, log1.toString(), packageDir, started);
+                }
 
                 // assign the PIDs to the VEO and the Record Items
                 if (pids == null) {

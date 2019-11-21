@@ -51,9 +51,10 @@ public final class VPA {
      * @param pidPrefix prefix of the PID
      * @param targetURL target URL of JSON request to PID server
      * @param author author of JSON request to PID server
+     * @param light true if just testing the VEO, not processing it
      * @throws AppFatal if an error occurred that precludes further processing
      */
-    public VPA(Path outputDir, Path supportDir, String rdfIdPrefix, Level logLevel, boolean useRealHandleService, String pidServURL, String pidUserId, String pidPasswd, String pidPrefix, String targetURL, String author) throws AppFatal {
+    public VPA(Path outputDir, Path supportDir, String rdfIdPrefix, Level logLevel, boolean useRealHandleService, String pidServURL, String pidUserId, String pidPasswd, String pidPrefix, String targetURL, String author, boolean light) throws AppFatal {
 
         // sanity checking
         if (outputDir == null) {
@@ -112,8 +113,8 @@ public final class VPA {
         packages = new Packages(ff);
 
         // set up V2 and V3 processors
-        v2p = new V2Process(ps, ff, rdfIdPrefix, supportDir, packages, logLevel);
-        v3p = new V3Process(ps, outputDir, supportDir, packages, logLevel);
+        v2p = new V2Process(ps, ff, rdfIdPrefix, supportDir, packages, logLevel, light);
+        v3p = new V3Process(ps, outputDir, supportDir, packages, logLevel, light);
     }
 
     /**
@@ -198,7 +199,7 @@ public final class VPA {
      * @throws AppFatal if a system error occurred
      * @throws AppError processing failed, but further VEOs can be submitted
      */
-    private VEOResult process(String setMetadata, Path veo, Path veoOutputDir, String pids) throws AppFatal, AppError {
+    public VEOResult process(String setMetadata, Path veo, Path veoOutputDir, String pids) throws AppFatal, AppError {
         int i;
         String recordName;  // name of this record element (from the file, without the final '.xml')
         VEOResult res;      // result of processing the VEO
