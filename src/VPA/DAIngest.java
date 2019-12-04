@@ -54,6 +54,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -84,6 +85,8 @@ public class DAIngest {
     boolean useRealHandleService; // where to get handles from
     String setMetadata;     // A string containing metadata about the set
     boolean light;          // true if only testing the VEO, not processing it
+    int ignoreAbove;        // if non-zero, ignore any VEOs larger than this size in KB
+    double sample;          // if non-zero, this sets a sample rate, however always sample at least one VEO in each directory
 
     FileWriter statfw;      // file writer for statistics
     BufferedWriter statbw;
@@ -113,6 +116,8 @@ public class DAIngest {
         verbose = false;
         rdfIdPrefix = null;
         light = false;
+        ignoreAbove = 0;
+        sample = 1.0;
         userId = System.getProperty("user.name");
         if (userId == null) {
             userId = "Unknown user";
@@ -171,7 +176,7 @@ public class DAIngest {
      */
     private void configure(String args[]) throws AppFatal {
         int i;
-        String usage = "VPA [-v] [-d] -s <directory> [-o <directory>] [-h] (files|directories)*";
+        String usage = "VPA [-v] [-d] -s <directory> [-o <directory>] [-sample <probability>] [-ignoreAbove <sizeKB>] [-h] (files|directories)*";
 
         // process command line arguments
         i = 0;
@@ -228,6 +233,28 @@ public class DAIngest {
                         light = true;
                         break;
 
+                    // '-sample' specifies the probability that a VEO will be
+                    // tested. One VEO from each directory will be tested.
+                    case "-sample":
+                        i++;
+                        sample = Double.parseDouble(args[i]);
+                        if (sample > 1.0 || sample < 0.0) {
+                            throw new AppFatal("-sample must be in the range 0.0 to 1.0 (inclusive)");
+                        }
+                        i++;
+                        break;
+
+                    // '-ignoreAbove' specifies the maximum size (in KB) above
+                    // which the VEO will be ignored (to speed up testing)
+                    case "-ignoreAbove":
+                        i++;
+                        ignoreAbove = Integer.parseInt(args[i]);
+                        if (ignoreAbove < 0) {
+                            throw new AppFatal("-ignoreAbove must be positive");
+                        }
+                        i++;
+                        break;
+
                     default:
                         // if unrecognised arguement, print help string and exit
                         if (args[i].charAt(0) == '-') {
@@ -242,6 +269,8 @@ public class DAIngest {
             }
         } catch (ArrayIndexOutOfBoundsException ae) {
             throw new AppFatal("Missing argument. Usage: " + usage);
+        } catch (NumberFormatException | NullPointerException nfe) {
+            throw new AppFatal("Number argument invalid: " + nfe.getMessage() + " Usage: " + usage);
         }
 
         // check to see if at least one file or directory is specified
@@ -262,6 +291,12 @@ public class DAIngest {
         LOG.log(Level.INFO, "RDF Identifier prefix is ''{0}''", new Object[]{rdfIdPrefix});
         LOG.log(Level.INFO, "Source directory is ''{0}''", new Object[]{sourceDirectory.toString()});
         LOG.log(Level.INFO, "Output directory is ''{0}''", new Object[]{outputDirectory.toString()});
+        if (sample < 1) {
+            LOG.log(Level.INFO, "Sampling VEOs at a rate of {0}", new Object[]{sample});
+        }
+        if (ignoreAbove > 0) {
+            LOG.log(Level.INFO, "Ignoring VEOs greater than {0} bytes ({1} KB)", new Object[]{ignoreAbove*1024, ignoreAbove});
+        }
         LOG.log(Level.INFO, "User id to be logged: ''{0}''", new Object[]{userId});
         if (light) {
             LOG.log(Level.INFO, "Light mode");
@@ -308,7 +343,7 @@ public class DAIngest {
             if (file == null) {
                 continue;
             }
-            processFile(Paths.get(file));
+            processFile(Paths.get(file), true);
         }
     }
 
@@ -328,7 +363,7 @@ public class DAIngest {
                 if (file == null) {
                     continue;
                 }
-                processFile(Paths.get(file));
+                processFile(Paths.get(file), true);
             }
         }
     }
@@ -338,8 +373,9 @@ public class DAIngest {
      * process all of the files (or directories) in it.
      *
      * @param f the file or directory to process
+     * @param first this is the first entry in the directory
      */
-    public void processFile(Path f) {
+    public void processFile(Path f, boolean first) {
         DirectoryStream<Path> ds;
 
         // check that file or directory exists
@@ -356,9 +392,11 @@ public class DAIngest {
                 LOG.log(Level.INFO, "***Processing directory ''{0}''", new Object[]{f.normalize().toString()});
             }
             try {
+                boolean b = true;
                 ds = Files.newDirectoryStream(f);
                 for (Path p : ds) {
-                    processFile(p);
+                    processFile(p, b);
+                    b = false;
                 }
                 ds.close();
             } catch (IOException e) {
@@ -368,6 +406,19 @@ public class DAIngest {
         }
 
         if (Files.isRegularFile(f)) {
+            // possibly ignore if sampling 
+            if (!first && Math.random() > sample) {
+                LOG.log(Level.INFO, "***Ignoring file ''{0}'' due to sampling", new Object[]{f.normalize().toString()});
+                return;
+            }
+            try {
+                if (ignoreAbove > 0 && Files.size(f) > ignoreAbove * 1024) {
+                    LOG.log(Level.INFO, "***Ignoring file ''{0}'' as it is too big", new Object[]{f.normalize().toString()});
+                    return;
+                }
+            } catch (IOException ioe) {
+                LOG.log(Level.WARNING, "***Ignoring file ''{0}'' we couldn't get the size", new Object[]{f.normalize().toString()});
+            }
             if (process(f) && !light) {
                 reprocess(f);
             }
