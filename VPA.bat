@@ -1,5 +1,7 @@
 @echo off
-rem set code="C:\Users\Andrew\Documents\Work\VERSCode\VPA"
-set code="J:\PROV\TECHNOLOGY MANAGEMENT\Application Development\VERS\VERSCode\VPA"
-set versclasspath=%code%/dist/*
-java -classpath %versclasspath% VPA.DAIngest -s %code%/support %*
+if exist "J:/PROV/TECHNOLOGY MANAGEMENT/Application Development/VERS/VERSCode" (
+	set code="J:/PROV/TECHNOLOGY MANAGEMENT/Application Development/VERS/VERSCode"
+) else (
+	set code="C:/Users/Andrew/Documents/Work/VERSCode"
+)
+java -classpath %code%/VPA/dist/* VPA.DAIngest -s %code%/VPA/support %*
