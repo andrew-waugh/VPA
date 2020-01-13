@@ -194,7 +194,7 @@ public final class V3Process {
                 // parse the VEOContent.xml file and get the Record Items (IOs)
                 xmlFile = tvr.veoDir.resolve("VEOContent.xml");
                 ios = vcp.parse(xmlFile, tvr.veoDir, veo);
-                
+
                 // go no further if light...
                 if (light) {
                     return new VEOResult(recordName, VEOResult.V3_VEO, success, log1.toString(), packageDir, started);
@@ -506,6 +506,8 @@ public final class V3Process {
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:title":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:identifier":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:description":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:spatial":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/aglsterms:jurisdiction":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:relation":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:conformsTo":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:hasFormat":
@@ -759,9 +761,11 @@ public final class V3Process {
                     io.descriptions.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Coverage/anzs5478:JurisdictionalCoverage":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/aglsterms:jurisdiction":
                     io.jurisdictionalCoverage.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Coverage/anzs5478:SpatialCoverage":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:spatial":
                     io.spatialCoverage.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Disposal/anzs5478:RetentionAndDisposalAuthority":
@@ -784,7 +788,7 @@ public final class V3Process {
                     } else {
                         cf.fileExt = s.substring(i + 1);
                     }
-                    cf.sourceFileName = value;
+                    cf.sourceFileName = s;
 
                     // get file size
                     try {

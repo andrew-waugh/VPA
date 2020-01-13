@@ -164,7 +164,7 @@ public class V2Process {
             if (!veoc.vpaTestVEO(veo, p, out)) {
                 return new VEOResult(recordName, VEOResult.V2_VEO, false, out.toString(), null, started);
             }
-            
+
             // are we just testing the VEO?
             if (light) {
                 return new VEOResult(recordName, VEOResult.V2_VEO, true, out.toString(), null, started);
@@ -531,7 +531,7 @@ public class V2Process {
                     if (versid == null) {
                         versid = "Revision-1-Document-" + docNo + "-Encoding-" + encNo + "-DocumentData";
                     }
-                    
+
                     // if light, don't include the DocumentData
                     if (light) {
                         he = null;
@@ -976,7 +976,9 @@ public class V2Process {
                     break;
                 case "vers:Document/vers:Encoding/vers:EncodingMetadata/vers:SourceFileIdentifier":
                     if (finalVersion) {
-                        encoding.sourceFileName = value;
+                        String safe = value.replaceAll("\\\\", "/");
+                        Path p = Paths.get(safe);
+                        encoding.sourceFileName = p.getFileName().toString();
                     }
                     break;
                 case "vers:VERSEncapsulatedObject/vers:SignedObject/vers:ObjectContent/vers:ModifiedVEO/vers:OriginalVEO/vers:SignedObject/vers:ObjectContent/vers:Record/vers:Document/vers:Encoding/vers:DocumentData":
