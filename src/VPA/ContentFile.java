@@ -71,10 +71,19 @@ public final class ContentFile {
         
         // get the suffix (only of the PID)
         token = s.split("/");
-        if (token.length != 2) {
-            throw new AppError("PID does not have a prefix and suffix separated by a '/': '"+s+"' (ContentFile.getSAMSuri)");
+        switch (token.length) {
+            // expected case where a prefix is not present
+            case 1:
+                s = token[0];
+                break;
+            // where a prefix and suffix are present
+            case 2:
+                s = token[1];
+                break;
+            // something odd... multiple '/'...
+            default:
+                throw new AppError("PID does not have a prefix and suffix separated by a '/': '"+s+"' (ContentFile.getSAMSuri)");
         }
-        s = token[1];
         
         // suppress the hyphens in the suffix, and put in five levels
         j = 0;

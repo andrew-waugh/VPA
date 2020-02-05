@@ -766,7 +766,7 @@ public class V2Process {
                 case "vers:FileMetadata/naa:Title/naa:TitleWords":
                     if (finalVersion) {
                         io.titles.add(value);
-                        io.label = value;
+                        // io.label = value; Removed a/c request from AMS team
                     }
                     break;
                 case "vers:RecordMetadata/naa:Description":
