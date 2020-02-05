@@ -103,7 +103,7 @@ public class PIDService {
         // for testing, so we don't hit the production server unless necessary
         if (!useRealHandleService) {
             count++;
-            return "123456789a/" + "-0123-4567-89ab-cdef0123456789ab"+count;
+            return /* "123456789a/" + */ "-0123-4567-89ab-cdef0123456789ab"+count;
         }
 
         // build POST data in JSON and convert it to a UTF-8 encoded array of bytes
@@ -193,9 +193,11 @@ public class PIDService {
         } catch (IOException ioe) {
             /* ignore */ }
 
+        /*
         if (prefix == null) {
             throw new AppFatal("Did not find suffix in response from PID Service: " + Json.prettyPrintJSON(j1.toString()));
         }
+        */
         if (suffix == null) {
             throw new AppFatal("Did not find suffix in response from PID Service: " + Json.prettyPrintJSON(j1.toString()));
         }
@@ -204,6 +206,9 @@ public class PIDService {
         op.disconnect();
 
         // return the persistent identifier
-        return prefix + "/" + suffix;
+        // changed 20200129 a/c request not to include the unique PROV id
+        // (20.500.12189) in the PID. Code left in in case it ever needs to be
+        // changed back
+        return /* prefix + "/" +*/ suffix;
     }
 }
