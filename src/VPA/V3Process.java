@@ -385,6 +385,7 @@ public final class V3Process {
         private Path veoFile;                   // file name of VEO
         private Path veoDir;                    // place to put the VEO content
         private ArrayList<InformationObject> ios;  // list of Information Objects
+        private int seqNo;                      // sequence no of IO in VEO
         private InformationObject io;           // current vers:InformationObject being parsed
         private MetadataPackage mp;             // current vers:MetadataPackage being parsed
         private InformationPiece ip;            // current vers:InforamtionPiece being parsed
@@ -409,6 +410,7 @@ public final class V3Process {
             veoFile = null;
             veoDir = null;
             ios = null;
+            seqNo = 0;
             io = null;
             mp = null;
             ip = null;
@@ -473,7 +475,8 @@ public final class V3Process {
             // match the path to see if do we do something special?
             switch (eFound) {
                 case "vers:InformationObject":
-                    io = new InformationObject(ps, 0);
+                    io = new InformationObject(ps, seqNo);
+                    seqNo++;
                     ios.add(io);
                     io.veoVersion = "V3";
                     io.veoFileName = veoFile.getFileName().toString();
