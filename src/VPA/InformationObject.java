@@ -433,6 +433,19 @@ public final class InformationObject {
                 j2.put("title", titles.get(i));
                 ja.add(j2);
             }
+        } else {
+            // this code has been temporarily added to allow end to end testing
+            // of the AMS. It ensures that the IO *always* contains a titles/title
+            // property, even if the IO in the VEO doesn't.
+            ja = new JSONArray();
+            j1.put("titles", ja);
+            j2 = new JSONObject();
+            if (label != null) {
+                j2.put("title", label);
+            } else {
+                j2.put("title", "[Not Set]");
+            }
+            ja.add(j2);
         }
         if (label != null) {
             j1.put("label", label);
