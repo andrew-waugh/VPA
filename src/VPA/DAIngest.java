@@ -48,6 +48,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -343,7 +344,11 @@ public class DAIngest {
             if (file == null) {
                 continue;
             }
-            processFile(Paths.get(file), true);
+            try {
+                processFile(Paths.get(file), true);
+            } catch (InvalidPathException ipe) {
+                LOG.log(Level.WARNING, "***Ignoring file ''{0}'' as the file name was invalid: {1}", new Object[]{file, ipe.getMessage()});
+            }
         }
     }
 
