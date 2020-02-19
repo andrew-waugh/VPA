@@ -118,6 +118,7 @@ public final class ContentFile {
 
         sb.append("      {\n");
         sb.append("      \"cfSeqNo\":" + seqNbr + ",\n");
+        sb.append("      \"parentIPSeqNo\":" + parent.seqNbr + ",\n");
         sb.append("      \"sourceFileName\":\"" + Json.safe(sourceFileName) + "\",\n");
         sb.append("      \"sourceFileExtension\":\"" + Json.safe(fileExt) + "\",\n");
         if (fileLocation != null) {
@@ -137,6 +138,7 @@ public final class ContentFile {
     public JSONObject toJSON() throws AppError {
         JSONObject j = new JSONObject();
         j.put("cfSeqNo", seqNbr);
+        j.put("parentIPSeqNo", parent.seqNbr);
         j.put("sourceFileName", sourceFileName);
         j.put("sourceFileExtension", fileExt);
         if (fileLocation != null) {
