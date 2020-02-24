@@ -89,9 +89,11 @@ public final class ContentFile {
         j = 0;
         k = 0;
         for (i=0; i<s.length(); i++) {
-            if (s.charAt(i) == '-') {
+            // This code was removed at the request of the SAMS developer - the
+            // original idea was that the hyphens would not appear in the URL
+            /* if (s.charAt(i) == '-') {
                 continue;
-            }
+            } */
             sb.append(s.charAt(i));
             j++;
             if (j == 2 && k < 4) {
