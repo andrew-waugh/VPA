@@ -568,8 +568,8 @@ public final class V3Process {
                     break;
                 case "vers:InformationObject/vers:InformationPiece/vers:ContentFile":
                     cf = ip.addContentFile();
+                    cfSeqNoInVEO++; // put before next line to make cf.seqNo start from 1
                     cf.seqNbr = cfSeqNoInVEO;
-                    cfSeqNoInVEO++;
                     wtdwv = null;
                     break;
                 case "vers:InformationObject/vers:InformationPiece/vers:ContentFile/vers:PathName":
