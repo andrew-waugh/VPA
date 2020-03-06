@@ -100,7 +100,9 @@ public final class InformationPiece {
         JSONArray ja;
         int i;
 
-        j.put("ipLabel", label);
+        if (label != null) {
+            j.put("ipLabel", label);
+        }
         j.put("ipSeqNo", seqNbr);
         if (contentFiles.size() > 0) {
             ja = new JSONArray();
