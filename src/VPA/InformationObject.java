@@ -83,7 +83,7 @@ public final class InformationObject {
         veoPID = null;
         v2VEOId = null;
         seqNo = 0;
-        depth = 1;
+        depth = 0; // changed from 1
         parent = null;
         if (children != null) {
             for (i = 0; i < children.size(); i++) {
