@@ -648,6 +648,9 @@ public final class V3Process {
                     mp.syntax = value;
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:date":
+                    if (!aglsMP) {
+                        break;
+                    }
                     // only use plain date if we haven't seen a more precise date
                     if (io.dateCreated == null) {
                         io.dateCreated = value;
@@ -655,6 +658,9 @@ public final class V3Process {
                     }
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:created":
+                    if (!aglsMP) {
+                        break;
+                    }
                     // could have multiple dates, choose first dateCreated found unless we find a longer
                     // (more precise) date
                     if (io.dateCreated == null || io.dateCreated.length() < value.length()) {
@@ -663,93 +669,192 @@ public final class V3Process {
                     io.dates.add(new Date("DateCreated", value));
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:available":
+                    if (!aglsMP) {
+                        break;
+                    }
                     io.dates.add(new Date("DateAvailable", value));
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:dateCopyrighted":
+                    if (!aglsMP) {
+                        break;
+                    }
                     io.dates.add(new Date("DateCopyrighted", value));
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:dateLicensed":
+                    if (!aglsMP) {
+                        break;
+                    }
                     io.dates.add(new Date("DateLicensed", value));
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:issued":
+                    if (!aglsMP) {
+                        break;
+                    }
                     io.dates.add(new Date("DateIssued", value));
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:modified":
+                    if (!aglsMP) {
+                        break;
+                    }
                     io.dates.add(new Date("DateModified", value));
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:valid":
+                    if (!aglsMP) {
+                        break;
+                    }
                     io.dates.add(new Date("DateValid", value));
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:title":
+                    if (!aglsMP) {
+                        break;
+                    }
                     io.titles.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:description":
+                    if (!aglsMP) {
+                        break;
+                    }
                     io.descriptions.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:identifier":
+                    if (!aglsMP) {
+                        break;
+                    }
                     io.addIdentifier(value, null);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:relation":
+                    if (!aglsMP) {
+                        break;
+                    }
                     addAGLSRelation("Relation", value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:conformsTo":
+                    if (!aglsMP) {
+                        break;
+                    }
                     addAGLSRelation("conformsTo", value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:hasFormat":
+                    if (!aglsMP) {
+                        break;
+                    }
                     addAGLSRelation("hasFormat", value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:hasPart":
+                    if (!aglsMP) {
+                        break;
+                    }
                     addAGLSRelation("hasPart", value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:hasVersion":
+                    if (!aglsMP) {
+                        break;
+                    }
                     addAGLSRelation("hasVersion", value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/aglsterms:isBasisFor":
+                    if (!aglsMP) {
+                        break;
+                    }
                     addAGLSRelation("isBasisFor", value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/aglsterms:isBasedOn":
+                    if (!aglsMP) {
+                        break;
+                    }
                     addAGLSRelation("isBasedOn", value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:isFormatOf":
+                    if (!aglsMP) {
+                        break;
+                    }
                     addAGLSRelation("isFormatOf", value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:isPartOf":
+                    if (!aglsMP) {
+                        break;
+                    }
                     addAGLSRelation("isPartOf", value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:isReferencedBy":
+                    if (!aglsMP) {
+                        break;
+                    }
                     addAGLSRelation("isReferencedBy", value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:isReplacedBy":
+                    if (!aglsMP) {
+                        break;
+                    }
                     addAGLSRelation("isReplacedBy", value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:isVersionOf":
+                    if (!aglsMP) {
+                        break;
+                    }
                     addAGLSRelation("isVersionOf", value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:replaces":
+                    if (!aglsMP) {
+                        break;
+                    }
                     addAGLSRelation("replaces", value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:requires":
+                    if (!aglsMP) {
+                        break;
+                    }
                     addAGLSRelation("requires", value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/versterms:disposalReference":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/versterms:disposal-Reference": // oddity in standard
+                    if (!aglsMP) {
+                        break;
+                    }
                     io.disposalAuthority.rdas.add(value);
                     break;
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/aglsterms:jurisdiction":
+                    if (!aglsMP) {
+                        break;
+                    }
+                    io.jurisdictionalCoverage.add(value);
+                    break;
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:spatial":
+                    if (!aglsMP) {
+                        break;
+                    }
+                    io.spatialCoverage.add(value);
+                    break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Identifier/anzs5478:IdentifierString":
+                    if (!anzs5478MP) {
+                        break;
+                    }
                     idValue = value;
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Identifier/anzs5478:IdentifierScheme":
+                    if (!anzs5478MP) {
+                        break;
+                    }
                     idScheme = value;
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Identifier":
+                    if (!anzs5478MP) {
+                        break;
+                    }
                     io.addIdentifier(idValue, idScheme);
                     idValue = null;
                     idScheme = null;
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Name/anzs5478:NameWords":
+                    if (!anzs5478MP) {
+                        break;
+                    }
                     io.titles.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:DateRange/anzs5478:StartDate":
+                    if (!anzs5478MP) {
+                        break;
+                    }
                     // could have multiple dates, choose first dateCreated found unless we find a longer
                     // (more precise) date
                     if (io.dateCreated == null || io.dateCreated.length() < value.length()) {
@@ -758,23 +863,39 @@ public final class V3Process {
                     io.dates.add(new Date("StartDate", value));
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:DateRange/anzs5478:EndDate":
+                    if (!anzs5478MP) {
+                        break;
+                    }
                     io.dates.add(new Date("EndDate", value));
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Description":
+                    if (!anzs5478MP) {
+                        break;
+                    }
                     io.descriptions.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Coverage/anzs5478:JurisdictionalCoverage":
-                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/aglsterms:jurisdiction":
+                    if (!anzs5478MP) {
+                        break;
+                    }
                     io.jurisdictionalCoverage.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Coverage/anzs5478:SpatialCoverage":
-                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:spatial":
+                    if (!anzs5478MP) {
+                        break;
+                    }
                     io.spatialCoverage.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Disposal/anzs5478:RetentionAndDisposalAuthority":
+                    if (!anzs5478MP) {
+                        break;
+                    }
                     io.disposalAuthority.rdas.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Disposal/anzs5478:DisposalClass":
+                    if (!anzs5478MP) {
+                        break;
+                    }
                     io.disposalAuthority.disposalClass = value;
                     break;
                 case "vers:InformationObject/vers:InformationPiece/vers:Label":
