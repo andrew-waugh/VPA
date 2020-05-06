@@ -38,10 +38,8 @@ package VPA;
  */
 import VERSCommon.AppFatal;
 import VERSCommon.AppError;
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -55,7 +53,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -85,6 +82,7 @@ public class DAIngest {
     String userId;          // user performing the conversion
     boolean useRealHandleService; // where to get handles from
     String setMetadata;     // A string containing metadata about the set
+    boolean migration;      // true if doing migration from old DSA - back off on testing
     boolean light;          // true if only testing the VEO, not processing it
     int ignoreAbove;        // if non-zero, ignore any VEOs larger than this size in KB
     double sample;          // if non-zero, this sets a sample rate, however always sample at least one VEO in each directory
@@ -117,6 +115,7 @@ public class DAIngest {
         verbose = false;
         rdfIdPrefix = null;
         light = false;
+        migration = false;
         ignoreAbove = 0;
         sample = 1.0;
         userId = System.getProperty("user.name");
@@ -132,7 +131,7 @@ public class DAIngest {
         configure(args);
 
         // set up processor
-        vp = new VPA(outputDirectory, supportDir, rdfIdPrefix, LOG.getLevel(), useRealHandleService, PID_SERVER_URL, USER_ID, PASSWORD, PID_PREFIX, TARGET_URL, AUTHOR, light);
+        vp = new VPA(outputDirectory, supportDir, rdfIdPrefix, LOG.getLevel(), useRealHandleService, PID_SERVER_URL, USER_ID, PASSWORD, PID_PREFIX, TARGET_URL, AUTHOR, migration, light);
 
         // open statistics
         try {
@@ -177,7 +176,7 @@ public class DAIngest {
      */
     private void configure(String args[]) throws AppFatal {
         int i;
-        String usage = "VPA [-v] [-d] -s <directory> [-o <directory>] [-sample <probability>] [-ignoreAbove <sizeKB>] [-h] (files|directories)*";
+        String usage = "VPA [-v] [-d] -s <directory> [-o <directory>] [-sample <probability>] [-ignoreAbove <sizeKB>] [-lite] [-m] [-h] (files|directories)*";
 
         // process command line arguments
         i = 0;
@@ -232,6 +231,12 @@ public class DAIngest {
                     case "-lite":
                         i++;
                         light = true;
+                        break;
+
+                    // '-m' specifies migrating from old DSA, so back off on some of the tests
+                    case "-m":
+                        i++;
+                        migration = true;
                         break;
 
                     // '-sample' specifies the probability that a VEO will be
@@ -296,9 +301,12 @@ public class DAIngest {
             LOG.log(Level.INFO, "Sampling VEOs at a rate of {0}", new Object[]{sample});
         }
         if (ignoreAbove > 0) {
-            LOG.log(Level.INFO, "Ignoring VEOs greater than {0} bytes ({1} KB)", new Object[]{ignoreAbove*1024, ignoreAbove});
+            LOG.log(Level.INFO, "Ignoring VEOs greater than {0} bytes ({1} KB)", new Object[]{ignoreAbove * 1024, ignoreAbove});
         }
         LOG.log(Level.INFO, "User id to be logged: ''{0}''", new Object[]{userId});
+        if (migration) {
+            LOG.log(Level.INFO, "Migration mode - backing off on some of the V2 validation");
+        }
         if (light) {
             LOG.log(Level.INFO, "Light mode");
         }

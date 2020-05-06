@@ -112,7 +112,7 @@ public class StressTest {
         configure(args);
 
         // set up processor
-        vp = new VPA(outputDirectory, supportDir, rdfIdPrefix, LOG.getLevel(), false, PID_SERVER_URL, USER_ID, PASSWORD, PID_PREFIX, TARGET_URL, AUTHOR, false);
+        vp = new VPA(outputDirectory, supportDir, rdfIdPrefix, LOG.getLevel(), false, PID_SERVER_URL, USER_ID, PASSWORD, PID_PREFIX, TARGET_URL, AUTHOR, false, false);
     }
 
     /**

@@ -53,7 +53,7 @@ public class V2Process {
     private String uniqueID;              // unique ID of this VEO (the first signature)
     private final ArrayList<String> lockSigBlock; // lock signature blocks from currently parsed VEO
     private String signedObject;          // signedObject from currently parsed VEO
-    private boolean light;                // if true, only test VEO, don't process it
+    private final boolean light;          // if true, only test VEO, don't process it
 
     private final static Logger LOG = Logger.getLogger("VPA.V2Process");
 
@@ -66,10 +66,11 @@ public class V2Process {
      * @param supportDir directory where the versV2.dtd file is located
      * @param packages methods that generate the packages
      * @param logLevel logging level (INFO = verbose, FINE = debug)
+     * @param migration true if migrating from old DSA - back off on some of the validation
      * @param light true if only test the VEO, don't process it
      * @throws AppFatal if a fatal error occurred
      */
-    public V2Process(PIDService ps, FileFormat ff, String rdfIdPrefix, Path supportDir, Packages packages, Level logLevel, boolean light) throws AppFatal {
+    public V2Process(PIDService ps, FileFormat ff, String rdfIdPrefix, Path supportDir, Packages packages, Level logLevel, boolean migration, boolean light) throws AppFatal {
         Path dtd;
 
         LOG.setLevel(null);
@@ -81,7 +82,7 @@ public class V2Process {
         dtd = supportDir.resolve("versV2.dtd");
 
         // set up headless validation
-        veoc = new VEOCheck(dtd, logLevel);
+        veoc = new VEOCheck(dtd, logLevel, migration);
 
         // set up parser
         parser = new V2VEOParser();
