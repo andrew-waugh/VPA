@@ -161,6 +161,7 @@ public final class VPA {
         packages = new Packages(ff);
 
         // set up V2 and V3 processors
+        migration = true; // remove this in production!!! Set for now to force migration during migration of V2 VEOs to new DAS.
         v2p = new V2Process(ps, ff, rdfIdPrefix, supportDir, packages, logLevel, migration, light);
         v3p = new V3Process(ps, outputDir, supportDir, packages, logLevel, light);
     }
