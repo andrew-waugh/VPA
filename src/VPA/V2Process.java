@@ -19,7 +19,9 @@ import VERSCommon.HandleElement;
 import VERSCommon.XMLParser;
 import VERSCommon.XMLConsumer;
 import VEOCheck.VEOCheck;
+import VERSCommon.LTSF;
 import VERSCommon.VEOError;
+import VERSCommon.VEOFatal;
 import java.io.BufferedOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -66,11 +68,12 @@ public class V2Process {
      * @param supportDir directory where the versV2.dtd file is located
      * @param packages methods that generate the packages
      * @param logLevel logging level (INFO = verbose, FINE = debug)
-     * @param migration true if migrating from old DSA - back off on some of the validation
+     * @param migration true if migrating from old DSA - back off on some of the
+     * validation
      * @param light true if only test the VEO, don't process it
      * @throws AppFatal if a fatal error occurred
      */
-    public V2Process(PIDService ps, FileFormat ff, String rdfIdPrefix, Path supportDir, Packages packages, Level logLevel, boolean migration, boolean light) throws AppFatal {
+    public V2Process(PIDService ps, FileFormat ff, String rdfIdPrefix, Path supportDir, LTSF ltsf, Packages packages, Level logLevel, boolean migration, boolean light) throws AppFatal {
         Path dtd;
 
         LOG.setLevel(null);
@@ -82,7 +85,7 @@ public class V2Process {
         dtd = supportDir.resolve("versV2.dtd");
 
         // set up headless validation
-        veoc = new VEOCheck(dtd, logLevel, migration);
+        veoc = new VEOCheck(dtd, logLevel, ltsf, migration);
 
         // set up parser
         parser = new V2VEOParser();

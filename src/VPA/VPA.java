@@ -11,6 +11,8 @@ package VPA;
 
 import VERSCommon.AppFatal;
 import VERSCommon.AppError;
+import VERSCommon.LTSF;
+import VERSCommon.VEOFatal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.logging.Level;
@@ -32,6 +34,7 @@ public final class VPA {
     private V2Process v2p;          // class to process the V2 VEOs
     private V3Process v3p;          // class to process the V3 VEOs
     private FileFormat ff;          // class to contain file format info
+    private LTSF ltsf;              // valid long term preservation formats
 
     // logging
     private final static Logger LOG = Logger.getLogger("VPA.VPA");
@@ -159,11 +162,18 @@ public final class VPA {
         // set up output packaging
         ff = new FileFormat(supportDir);
         packages = new Packages(ff);
+        
+        // get valid long term sustainable formats
+        try {
+            ltsf = new LTSF(supportDir.resolve("validLTSF.txt"));
+        } catch (VEOFatal vf) {
+            throw new AppFatal(vf.getMessage());
+        }
 
         // set up V2 and V3 processors
         migration = true; // remove this in production!!! Set for now to force migration during migration of V2 VEOs to new DAS.
-        v2p = new V2Process(ps, ff, rdfIdPrefix, supportDir, packages, logLevel, migration, light);
-        v3p = new V3Process(ps, outputDir, supportDir, packages, logLevel, light);
+        v2p = new V2Process(ps, ff, rdfIdPrefix, supportDir, ltsf, packages, logLevel, migration, light);
+        v3p = new V3Process(ps, outputDir, supportDir, ltsf, packages, logLevel, light);
     }
 
     /**
