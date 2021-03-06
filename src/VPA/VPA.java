@@ -12,6 +12,7 @@ package VPA;
 import VERSCommon.AppFatal;
 import VERSCommon.AppError;
 import VERSCommon.LTSF;
+import VERSCommon.ResultSummary;
 import VERSCommon.VEOFatal;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,6 +36,7 @@ public final class VPA {
     private V3Process v3p;          // class to process the V3 VEOs
     private FileFormat ff;          // class to contain file format info
     private LTSF ltsf;              // valid long term preservation formats
+    private ResultSummary results;  // summary of results
 
     // logging
     private final static Logger LOG = Logger.getLogger("VPA.VPA");
@@ -58,7 +60,7 @@ public final class VPA {
      * @throws AppFatal if an error occurred that precludes further processing
      */
     public VPA(Path outputDir, Path supportDir, String rdfIdPrefix, Level logLevel, boolean useRealHandleService, String pidServURL, String pidUserId, String pidPasswd, String pidPrefix, String targetURL, String author, boolean light) throws AppFatal {
-        VPAConstInt(outputDir, supportDir, rdfIdPrefix, logLevel, useRealHandleService, pidServURL, pidUserId, pidPasswd, pidPrefix, targetURL, author, false, light);
+        VPAConstInt(outputDir, supportDir, rdfIdPrefix, logLevel, useRealHandleService, pidServURL, pidUserId, pidPasswd, pidPrefix, targetURL, author, false, light, null);
     }
     
         /**
@@ -82,7 +84,33 @@ public final class VPA {
      * @throws AppFatal if an error occurred that precludes further processing
      */
     public VPA(Path outputDir, Path supportDir, String rdfIdPrefix, Level logLevel, boolean useRealHandleService, String pidServURL, String pidUserId, String pidPasswd, String pidPrefix, String targetURL, String author, boolean migration, boolean light) throws AppFatal {
-        VPAConstInt(outputDir, supportDir, rdfIdPrefix, logLevel, useRealHandleService, pidServURL, pidUserId, pidPasswd, pidPrefix, targetURL, author, migration, light);
+        VPAConstInt(outputDir, supportDir, rdfIdPrefix, logLevel, useRealHandleService, pidServURL, pidUserId, pidPasswd, pidPrefix, targetURL, author, migration, light, null);
+    }
+    
+    /**
+     * Set up for processing VEOs. This option adds the ability to produce a
+     * result summary.
+     *
+     * @param outputDir directory in which packages are to be generated
+     * @param supportDir directory which contains support information (e.g. VEO
+     * schemas)
+     * @param rdfIdPrefix prefix to be used to construct RDF
+     * @param logLevel logging level (INFO = verbose, FINE = debug)
+     * @param useRealHandleService true if the real handle service is to be used
+     * @param pidServURL URL of the PID server
+     * @param pidUserId user id to log into the PID server
+     * @param pidPasswd password of user logging into the PID server
+     * @param pidPrefix prefix of the PID
+     * @param targetURL target URL of JSON request to PID server
+     * @param author author of JSON request to PID server
+     * @param migration true if migrating from old DSA - back off on some of the
+     * validation
+     * @param light true if just testing the VEO, not processing it
+     * @param results if non-null, produce a result summary
+     * @throws AppFatal if an error occurred that precludes further processing
+     */
+    public VPA(Path outputDir, Path supportDir, String rdfIdPrefix, Level logLevel, boolean useRealHandleService, String pidServURL, String pidUserId, String pidPasswd, String pidPrefix, String targetURL, String author, boolean migration, boolean light, ResultSummary results) throws AppFatal {
+        VPAConstInt(outputDir, supportDir, rdfIdPrefix, logLevel, useRealHandleService, pidServURL, pidUserId, pidPasswd, pidPrefix, targetURL, author, migration, light, results);
     }
 
     /**
@@ -103,9 +131,10 @@ public final class VPA {
      * @param migration true if migrating from old DSA - back off on some of the
      * validation
      * @param light true if just testing the VEO, not processing it
+     * @param results if non-null, produce a result summary
      * @throws AppFatal if an error occurred that precludes further processing
      */
-    private void VPAConstInt(Path outputDir, Path supportDir, String rdfIdPrefix, Level logLevel, boolean useRealHandleService, String pidServURL, String pidUserId, String pidPasswd, String pidPrefix, String targetURL, String author, boolean migration, boolean light) throws AppFatal {
+    private void VPAConstInt(Path outputDir, Path supportDir, String rdfIdPrefix, Level logLevel, boolean useRealHandleService, String pidServURL, String pidUserId, String pidPasswd, String pidPrefix, String targetURL, String author, boolean migration, boolean light, ResultSummary results) throws AppFatal {
 
         // sanity checking
         if (outputDir == null) {
@@ -172,8 +201,8 @@ public final class VPA {
 
         // set up V2 and V3 processors
         migration = true; // remove this in production!!! Set for now to force migration during migration of V2 VEOs to new DAS.
-        v2p = new V2Process(ps, ff, rdfIdPrefix, supportDir, ltsf, packages, logLevel, migration, light);
-        v3p = new V3Process(ps, outputDir, supportDir, ltsf, packages, logLevel, light);
+        v2p = new V2Process(ps, ff, rdfIdPrefix, supportDir, ltsf, packages, logLevel, migration, light, results);
+        v3p = new V3Process(ps, outputDir, supportDir, ltsf, packages, logLevel, light, results);
     }
 
     /**

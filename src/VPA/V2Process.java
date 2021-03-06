@@ -20,8 +20,8 @@ import VERSCommon.XMLParser;
 import VERSCommon.XMLConsumer;
 import VEOCheck.VEOCheck;
 import VERSCommon.LTSF;
+import VERSCommon.ResultSummary;
 import VERSCommon.VEOError;
-import VERSCommon.VEOFatal;
 import java.io.BufferedOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -66,14 +66,16 @@ public class V2Process {
      * @param ff mapping between MIME types and file formats
      * @param rdfIdPrefix RDF ID prefix to be used in generating RDF
      * @param supportDir directory where the versV2.dtd file is located
+     * @param ltsf list of long term sustainable formats
      * @param packages methods that generate the packages
      * @param logLevel logging level (INFO = verbose, FINE = debug)
      * @param migration true if migrating from old DSA - back off on some of the
      * validation
      * @param light true if only test the VEO, don't process it
+     * @param results if non-null, produce a result summary
      * @throws AppFatal if a fatal error occurred
      */
-    public V2Process(PIDService ps, FileFormat ff, String rdfIdPrefix, Path supportDir, LTSF ltsf, Packages packages, Level logLevel, boolean migration, boolean light) throws AppFatal {
+    public V2Process(PIDService ps, FileFormat ff, String rdfIdPrefix, Path supportDir, LTSF ltsf, Packages packages, Level logLevel, boolean migration, boolean light, ResultSummary results) throws AppFatal {
         Path dtd;
 
         LOG.setLevel(null);
@@ -85,7 +87,7 @@ public class V2Process {
         dtd = supportDir.resolve("versV2.dtd");
 
         // set up headless validation
-        veoc = new VEOCheck(dtd, logLevel, ltsf, migration);
+        veoc = new VEOCheck(dtd, logLevel, ltsf, migration, results);
 
         // set up parser
         parser = new V2VEOParser();
@@ -236,8 +238,9 @@ public class V2Process {
      * alteration is the removal of all DocumentData to allow easier processing
      * by DOM
      *
-     * @param p
+     * @param p path of the V2 VEO to be abbreviated
      * @throws AppError
+     * @throws AppFatal
      */
     public void createAbbrVEO(Path p) throws AppError, AppFatal {
         FileOutputStream fos;

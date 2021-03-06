@@ -38,21 +38,26 @@ package VPA;
  */
 import VERSCommon.AppFatal;
 import VERSCommon.AppError;
+import VERSCommon.ResultSummary;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -86,6 +91,7 @@ public class DAIngest {
     boolean light;          // true if only testing the VEO, not processing it
     int ignoreAbove;        // if non-zero, ignore any VEOs larger than this size in KB
     double sample;          // if non-zero, this sets a sample rate, however always sample at least one VEO in each directory
+    ResultSummary results;  // if non-null this is where a summary of the results go
 
     FileWriter statfw;      // file writer for statistics
     BufferedWriter statbw;
@@ -123,15 +129,35 @@ public class DAIngest {
             userId = "Unknown user";
         }
         useRealHandleService = false;
+        results = null;
         r = Runtime.getRuntime();
 
         setMetadata = " {\"ingestSetId\":\"12345\", \"agency\":\"3455\", \"series\":\"421\", \"consignment\":\"P0\", \"accessStatus\":\"open\"}";
+        
+        // output header
+        TimeZone tz;
+        SimpleDateFormat sdf;
+        System.out.println("******************************************************************************");
+        System.out.println("*                                                                            *");
+        System.out.println("*                     V E O   T E S T I N G   T O O L                        *");
+        System.out.println("*                                                                            *");
+        System.out.println("*                                Version 1.0                                 *");
+        System.out.println("*              Copyright 2021 Public Record Office Victoria                  *");
+        System.out.println("*                                                                            *");
+        System.out.println("******************************************************************************");
+        System.out.println("");
+
+        System.out.println("Test run: ");
+        tz = TimeZone.getTimeZone("GMT+10:00");
+        sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss+10:00");
+        sdf.setTimeZone(tz);
+        System.out.println(sdf.format(new java.util.Date()));
 
         // process command line arguments
         configure(args);
 
         // set up processor
-        vp = new VPA(outputDirectory, supportDir, rdfIdPrefix, LOG.getLevel(), useRealHandleService, PID_SERVER_URL, USER_ID, PASSWORD, PID_PREFIX, TARGET_URL, AUTHOR, migration, light);
+        vp = new VPA(outputDirectory, supportDir, rdfIdPrefix, LOG.getLevel(), useRealHandleService, PID_SERVER_URL, USER_ID, PASSWORD, PID_PREFIX, TARGET_URL, AUTHOR, migration, light, results);
 
         // open statistics
         try {
@@ -176,7 +202,7 @@ public class DAIngest {
      */
     private void configure(String args[]) throws AppFatal {
         int i;
-        String usage = "VPA [-v] [-d] -s <directory> [-o <directory>] [-sample <probability>] [-ignoreAbove <sizeKB>] [-lite] [-m] [-h] (files|directories)*";
+        String usage = "VPA [-v] [-d] [-rs] -s <directory> [-o <directory>] [-sample <probability>] [-ignoreAbove <sizeKB>] [-lite] [-m] [-h] (files|directories)*";
 
         // process command line arguments
         i = 0;
@@ -200,6 +226,12 @@ public class DAIngest {
                         i++;
                         break;
 
+                    // produce a result summary?
+                    case "-rs":
+                        results = new ResultSummary();
+                        i++;
+                        break;
+
                     // use real handle service
                     case "-h":
                         useRealHandleService = true;
@@ -213,7 +245,7 @@ public class DAIngest {
                         i++;
                         break;
 
-                    // '-o' specifies base directory
+                    // '-s' specifies support directory
                     case "-s":
                         i++;
                         supportDir = checkFile("support directory", args[i], true);
@@ -293,6 +325,7 @@ public class DAIngest {
         } else if (verbose) {
             LOG.log(Level.INFO, "Verbose output is selected");
         }
+        LOG.log(Level.INFO, "Producing a summary of results?: ''{0}''", new Object[]{results == null ? "no" : "yes"});
         LOG.log(Level.INFO, "Using real handle service: ''{0}''", new Object[]{useRealHandleService ? "true" : "false"});
         LOG.log(Level.INFO, "RDF Identifier prefix is ''{0}''", new Object[]{rdfIdPrefix});
         LOG.log(Level.INFO, "Source directory is ''{0}''", new Object[]{sourceDirectory.toString()});
@@ -804,6 +837,18 @@ public class DAIngest {
     }
 
     /**
+     * Print a summary of the results on the Writer out.
+     *
+     * @throws IOException
+     */
+    public void produceSummaryReport() throws IOException {
+        if (results == null) {
+            return;
+        }
+        results.report(new OutputStreamWriter(System.out));
+    }
+
+    /**
      * Main program
      *
      * @param args command line arguments
@@ -814,9 +859,10 @@ public class DAIngest {
         try {
             tp = new DAIngest(args);
             tp.processVEOs();
+            tp.produceSummaryReport();
             tp.close();
             // tp.stressTest(1000);
-        } catch (AppFatal e) {
+        } catch (AppFatal | IOException e) {
             System.out.println("Fatal error: " + e.getMessage());
             System.exit(-1);
         }

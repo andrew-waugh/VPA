@@ -19,6 +19,7 @@ import VERSCommon.XMLParser;
 import VERSCommon.XMLConsumer;
 import VEOAnalysis.VEOAnalysis;
 import VERSCommon.LTSF;
+import VERSCommon.ResultSummary;
 import VERSCommon.VEOError;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -60,9 +61,10 @@ public final class V3Process {
      * @param packages methods used to create the packages
      * @param logLevel logging level (INFO = verbose, FINE = debug)
      * @param light true if testing VEO only, not processing it
+     * @param results if non-null create a summary of the results
      * @throws AppFatal if a system error occurred
      */
-    public V3Process(PIDService ps, Path outputDir, Path schemaDir, LTSF ltsf, Packages packages, Level logLevel, boolean light) throws AppFatal {
+    public V3Process(PIDService ps, Path outputDir, Path schemaDir, LTSF ltsf, Packages packages, Level logLevel, boolean light, ResultSummary results) throws AppFatal {
         LogHandler handlr;
         boolean verbose, debug;
 
@@ -87,7 +89,7 @@ public final class V3Process {
 
         // set up analysis code
         try {
-            va = new VEOAnalysis(schemaDir, ltsf, outputDir, handlr, false, true, false, true, debug, verbose, true);
+            va = new VEOAnalysis(schemaDir, ltsf, outputDir, handlr, false, true, false, true, debug, verbose, true, results);
         } catch (VEOError ve) {
             throw new AppFatal(ve.getMessage());
         }
