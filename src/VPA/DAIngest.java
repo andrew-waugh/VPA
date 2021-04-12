@@ -7,7 +7,6 @@
 package VPA;
 
 /**
- *************************************************************
  *
  * DA Ingest
  *
@@ -46,7 +45,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -54,7 +52,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.TimeZone;
@@ -88,15 +85,18 @@ public class DAIngest {
     boolean useRealHandleService; // where to get handles from
     String setMetadata;     // A string containing metadata about the set
     boolean migration;      // true if doing migration from old DSA - back off on testing
-    boolean light;          // true if only testing the VEO, not processing it
+    boolean validateOnly;   // true if only testing the VEO, not processing it
     int ignoreAbove;        // if non-zero, ignore any VEOs larger than this size in KB
     double sample;          // if non-zero, this sets a sample rate, however always sample at least one VEO in each directory
     ResultSummary results;  // if non-null this is where a summary of the results go
+    boolean help;           // true if printing a cheat list of command line options
 
     FileWriter statfw;      // file writer for statistics
     BufferedWriter statbw;
 
     private final static Logger LOG = Logger.getLogger("VPA.DAIngest");
+
+    private final static String USAGE = "VPA [-v] [-d] [-rs] -s <directory> [-o <directory>] [-sample <probability>] [-ignoreAbove <sizeKB>] [-dasmode] [-m] [-h] (files|directories)*";
 
     /**
      * Default constructor
@@ -120,7 +120,7 @@ public class DAIngest {
         debug = false;
         verbose = false;
         rdfIdPrefix = null;
-        light = false;
+        validateOnly = true;
         migration = false;
         ignoreAbove = 0;
         sample = 1.0;
@@ -131,17 +131,21 @@ public class DAIngest {
         useRealHandleService = false;
         results = null;
         r = Runtime.getRuntime();
+        help = false;
 
         setMetadata = " {\"ingestSetId\":\"12345\", \"agency\":\"3455\", \"series\":\"421\", \"consignment\":\"P0\", \"accessStatus\":\"open\"}";
-        
-        // output header
+
+        // process command line arguments
+        configure(args);
+
+        // report on run
         TimeZone tz;
         SimpleDateFormat sdf;
         System.out.println("******************************************************************************");
         System.out.println("*                                                                            *");
         System.out.println("*                     V E O   T E S T I N G   T O O L                        *");
         System.out.println("*                                                                            *");
-        System.out.println("*                                Version 1.0                                 *");
+        System.out.println("*                                Version " + VPA.version() + "                                *");
         System.out.println("*              Copyright 2021 Public Record Office Victoria                  *");
         System.out.println("*                                                                            *");
         System.out.println("******************************************************************************");
@@ -152,12 +156,69 @@ public class DAIngest {
         sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss+10:00");
         sdf.setTimeZone(tz);
         System.out.println(sdf.format(new java.util.Date()));
+        if (help) {
+            // VPA [-v] [-d] [-rs] -s <directory> [-o <directory>] [-sample <probability>] [-ignoreAbove <sizeKB>] [-dasmode] [-m] [-h] [-r <rdfPrefix>] (files|directories)*
+            System.out.println("Command line arguments:");
+            System.out.println(" Mandatory:");
+            System.out.println("  <veos or directories>: a list of V2 or V3 VEO files or directories containing VEOs");
+            System.out.println("  -s <directory>: path to a support directory (containing e.g. DTDs and XML schemas)");
+            System.out.println("");
+            System.out.println(" Optional:");
+            System.out.println("  -o <directory>: the directory in which the results are generated (default is current working directory)");
+            System.out.println("  -rs: generate a summary of the errors and warnings at the end of the run");
+            System.out.println("  -dasmode: Generate the packages for the AMS, DAS, or SAMS");
+            System.out.println("");
+            System.out.println(" Optional and rarely needed:");
+            System.out.println("  -m: migration mode. Do not perform all the validation tests on V2 VEOs");
+            System.out.println("  -h: use the real handle (PID) service. Do NOT use this option unless you really need to");
+            System.out.println("  -sample <probability>: sample the VEOs rather than test them all");
+            System.out.println("  -ignoreAbove <sizeKB>: ignore any VEOs bigger than the specified size");
+            System.out.println("  -r <rdfPrefix>: specify the RDF prefix (i.e. http://blah/");
+            System.out.println("");
+            System.out.println("  -v: verbose mode: give more details about processing");
+            System.out.println("  -d: debug mode: may give even more details about processing");
+            System.out.println("  -help: print this listing");
+            System.out.println("");
+        }
 
-        // process command line arguments
-        configure(args);
+        // check to see if at least one file or directory is specified
+        if (files.isEmpty()) {
+            throw new AppFatal("You must specify at least one VEO file or directory to process");
+        }
+        if (supportDir == null) {
+            throw new AppFatal("You must specify a support directory");
+        }
+
+        System.out.println("Configuration:");
+        System.out.println(" Source directory is '" + sourceDirectory.toString() + "'");
+        System.out.println(" Output directory is '" + outputDirectory.toString() + "'");
+        if (migration) {
+            System.out.println(" Migration mode - does not carry out some of the V2 validation");
+        }
+        if (validateOnly) {
+            System.out.println(" Validating mode - just validates and does not generate the packages for AWS, DAS, or SAMS");
+        } else {
+            System.out.println(" DAS mode - emulates the DAS and generates the packages for AWS, DAS, or SAMS");
+        }
+        System.out.println(" Producing a summary of results?: '" + (results == null ? "no" : "yes") + "'");
+        System.out.println(" User id to be logged: '" + userId + "'");
+        System.out.println(" Using real handle service: '" + (useRealHandleService ? "true" : "false") + "'");
+        System.out.println(" RDF Identifier prefix is '" + rdfIdPrefix + "'");
+        if (sample < 1) {
+            System.out.println(" Sampling VEOs at a rate of " + sample + "");
+        }
+        if (ignoreAbove > 0) {
+            System.out.println(" Ignoring VEOs greater than " + (ignoreAbove * 1024) + " bytes (" + ignoreAbove + " KB)");
+        }
+        if (debug) {
+            System.out.println(" Verbose/Debug mode is selected");
+        } else if (verbose) {
+            System.out.println(" Verbose output is selected");
+        }
+        System.out.println("");
 
         // set up processor
-        vp = new VPA(outputDirectory, supportDir, rdfIdPrefix, LOG.getLevel(), useRealHandleService, PID_SERVER_URL, USER_ID, PASSWORD, PID_PREFIX, TARGET_URL, AUTHOR, migration, light, results);
+        vp = new VPA(outputDirectory, supportDir, rdfIdPrefix, LOG.getLevel(), useRealHandleService, PID_SERVER_URL, USER_ID, PASSWORD, PID_PREFIX, TARGET_URL, AUTHOR, migration, validateOnly, results);
 
         // open statistics
         try {
@@ -202,7 +263,6 @@ public class DAIngest {
      */
     private void configure(String args[]) throws AppFatal {
         int i;
-        String usage = "VPA [-v] [-d] [-rs] -s <directory> [-o <directory>] [-sample <probability>] [-ignoreAbove <sizeKB>] [-lite] [-m] [-h] (files|directories)*";
 
         // process command line arguments
         i = 0;
@@ -259,16 +319,22 @@ public class DAIngest {
                         i++;
                         break;
 
-                    // '-lite' specifies just test the VEO, don't process it
-                    case "-lite":
+                    // '-dasmode' specifies the original mode of operation - simulating the DAS environment
+                    case "-dasmode":
                         i++;
-                        light = true;
+                        validateOnly = false;
                         break;
 
                     // '-m' specifies migrating from old DSA, so back off on some of the tests
                     case "-m":
                         i++;
                         migration = true;
+                        break;
+
+                    // '-help' print command line options
+                    case "-help":
+                        i++;
+                        help = true;
                         break;
 
                     // '-sample' specifies the probability that a VEO will be
@@ -296,7 +362,7 @@ public class DAIngest {
                     default:
                         // if unrecognised arguement, print help string and exit
                         if (args[i].charAt(0) == '-') {
-                            throw new AppFatal("Unrecognised argument '" + args[i] + "' Usage: " + usage);
+                            throw new AppFatal("Unrecognised argument '" + args[i] + "' Usage: " + USAGE);
                         }
 
                         // if doesn't start with '-' assume a file or directory name
@@ -306,42 +372,9 @@ public class DAIngest {
                 }
             }
         } catch (ArrayIndexOutOfBoundsException ae) {
-            throw new AppFatal("Missing argument. Usage: " + usage);
+            throw new AppFatal("Missing argument. Usage: " + USAGE);
         } catch (NumberFormatException | NullPointerException nfe) {
-            throw new AppFatal("Number argument invalid: " + nfe.getMessage() + " Usage: " + usage);
-        }
-
-        // check to see if at least one file or directory is specified
-        if (files.isEmpty()) {
-            throw new AppFatal("You must specify at least one file or directory to process");
-        }
-        if (supportDir == null) {
-            throw new AppFatal("You must specify a support directory to process");
-        }
-
-        // LOG generic things
-        if (debug) {
-            LOG.log(Level.INFO, "Verbose/Debug mode is selected");
-        } else if (verbose) {
-            LOG.log(Level.INFO, "Verbose output is selected");
-        }
-        LOG.log(Level.INFO, "Producing a summary of results?: ''{0}''", new Object[]{results == null ? "no" : "yes"});
-        LOG.log(Level.INFO, "Using real handle service: ''{0}''", new Object[]{useRealHandleService ? "true" : "false"});
-        LOG.log(Level.INFO, "RDF Identifier prefix is ''{0}''", new Object[]{rdfIdPrefix});
-        LOG.log(Level.INFO, "Source directory is ''{0}''", new Object[]{sourceDirectory.toString()});
-        LOG.log(Level.INFO, "Output directory is ''{0}''", new Object[]{outputDirectory.toString()});
-        if (sample < 1) {
-            LOG.log(Level.INFO, "Sampling VEOs at a rate of {0}", new Object[]{sample});
-        }
-        if (ignoreAbove > 0) {
-            LOG.log(Level.INFO, "Ignoring VEOs greater than {0} bytes ({1} KB)", new Object[]{ignoreAbove * 1024, ignoreAbove});
-        }
-        LOG.log(Level.INFO, "User id to be logged: ''{0}''", new Object[]{userId});
-        if (migration) {
-            LOG.log(Level.INFO, "Migration mode - backing off on some of the V2 validation");
-        }
-        if (light) {
-            LOG.log(Level.INFO, "Light mode");
+            throw new AppFatal("Number argument invalid: " + nfe.getMessage() + " Usage: " + USAGE);
         }
     }
 
@@ -380,6 +413,12 @@ public class DAIngest {
         String file;
 
         // go through the list of files
+        System.out.print("Starting");
+        if (verbose) {
+            System.out.println("");
+        } else {
+            System.out.println(" (-v may give more details)");
+        }
         for (i = 0; i < files.size(); i++) {
             file = files.get(i);
             if (file == null) {
@@ -391,6 +430,7 @@ public class DAIngest {
                 LOG.log(Level.WARNING, "***Ignoring file ''{0}'' as the file name was invalid: {1}", new Object[]{file, ipe.getMessage()});
             }
         }
+        System.out.println("Finished");
     }
 
     /**
@@ -465,7 +505,7 @@ public class DAIngest {
             } catch (IOException ioe) {
                 LOG.log(Level.WARNING, "***Ignoring file ''{0}'' we couldn't get the size", new Object[]{f.normalize().toString()});
             }
-            if (process(f) && !light) {
+            if (process(f) && !validateOnly) {
                 reprocess(f);
             }
         } else {
@@ -496,9 +536,8 @@ public class DAIngest {
         }
 
         // reset, free memory, and print status
-        System.out.print(LocalDateTime.now().toString() + " Processing: '" + veo.normalize().toString() + "' ");
+        // System.out.print(LocalDateTime.now().toString() + " Processing: '" + veo.normalize().toString() + "' ");
         // LOG.LOG(Level.INFO, "{0} Processing ''{1}''", new Object[]{((new Date()).getTime() / 1000), veo.toString()});
-
         // create a outputDir in the outputDir in which to put the record content
         String s = veo.getFileName().toString();
         if ((i = s.lastIndexOf('.')) != -1) {
@@ -521,6 +560,9 @@ public class DAIngest {
 
         // process the veo file
         try {
+            if (verbose || !validateOnly) {
+                System.out.println("******************************************************************************");
+            }
             rt = Runtime.getRuntime();
             rt.gc();
             memuseStart = rt.totalMemory() - rt.freeMemory();
@@ -530,16 +572,22 @@ public class DAIngest {
             gap = ChronoUnit.MILLIS.between(start, end);
             rt.gc();
             memuseEnd = rt.totalMemory() - rt.freeMemory();
-            System.out.print("(" + gap + " mS) ");
-            System.out.println(memuseEnd);
+            // System.out.print("(" + gap + " mS) ");
+            // System.out.println(memuseEnd);
             if (res != null) {
                 suceeded = res.success;
-                if (!light || !suceeded) {
-                    System.out.println("");
+                if (!validateOnly || !suceeded || verbose) {
+                    // System.out.println
                     if (suceeded) {
                         System.out.print("SUCCESS");
                     } else {
+                        if (!verbose && validateOnly) {
+                            System.out.println("******************************************************************************");
+                        }
                         System.out.print("FAILED");
+                    }
+                    if (!verbose) {
+                        System.out.print(" processing: '" + veo.normalize().toString() + "'");
                     }
                     if (res.veoType == VEOResult.V2_VEO) {
                         System.out.print(" (V2 VEO");
@@ -558,7 +606,7 @@ public class DAIngest {
                     }
                     System.out.println(")");
                     if (res.result != null) {
-                        System.out.println(res.result);
+                        System.out.print(res.result);
                     } else {
                         System.out.println("Nil result");
                     }
@@ -599,7 +647,7 @@ public class DAIngest {
         } finally {
             System.gc();
 
-            if (light) {
+            if (validateOnly) {
                 if (!deleteDirectory(veoDir)) {
                     System.out.println("VEO directory '" + veoDir.normalize().toString() + "' couldn't be deleted");
                 }
@@ -634,7 +682,7 @@ public class DAIngest {
         }
 
         // reset, free memory, and print status
-        System.out.print(LocalDateTime.now().toString() + " Reprocessing: '" + veo.toString() + "' ");
+        System.out.print("REPROCESSING: '" + veo.toString() + "' ");
         // LOG.LOG(Level.INFO, "{0} Processing ''{1}''", new Object[]{((new Date()).getTime() / 1000), veo.toString()});
 
         // create a outputDir in the outputDir in which to put the record content
@@ -659,9 +707,11 @@ public class DAIngest {
             br.close();
             fr.close();
         } catch (FileNotFoundException e) {
+            System.out.println("");
             System.out.println("PIDS.json file could not be found: " + e.getMessage());
             return;
         } catch (IOException e) {
+            System.out.println("");
             System.out.println("Failed reading PIDS.json file: " + e.getMessage());
             return;
         }
@@ -669,12 +719,14 @@ public class DAIngest {
 
         veoDir = outputDirectory.resolve(recordName + "-r");
         if (!deleteDirectory(veoDir)) {
+            System.out.println("");
             System.out.println("VEO directory '" + veoDir.toString() + "' already exists & couldn't be deleted");
             return;
         }
         try {
             Files.createDirectory(veoDir);
         } catch (IOException ioe) {
+            System.out.println("");
             System.out.println("Packages.createDirs(): could not create VEO directory '" + veoDir.toString() + "': " + ioe.toString());
             return;
         }
@@ -693,7 +745,6 @@ public class DAIngest {
             System.out.print("(" + gap + " mS) ");
             System.out.println(memuseEnd);
             if (res != null) {
-                System.out.println("");
                 if (res.success) {
                     System.out.print("SUCCESS");
                 } else {
@@ -734,10 +785,8 @@ public class DAIngest {
                 } catch (IOException ioe) {
                     // ignore
                 }
-
-                // LOG.LOG(Level.INFO, "SUCCESS! VEO ''{0}''\n{1}", new Object[]{veo.toString(), res.result});
             } else {
-                LOG.log(Level.INFO, "SUCCESS VEO ''{0}''", new Object[]{veo.toString()});
+                System.out.println("NO result structure returned");
             }
             exportCount++;
             res = null;
@@ -854,13 +903,13 @@ public class DAIngest {
      * @param args command line arguments
      */
     public static void main(String args[]) {
-        DAIngest tp;
+        DAIngest dai;
 
         try {
-            tp = new DAIngest(args);
-            tp.processVEOs();
-            tp.produceSummaryReport();
-            tp.close();
+            dai = new DAIngest(args);
+            dai.processVEOs();
+            dai.produceSummaryReport();
+            dai.close();
             // tp.stressTest(1000);
         } catch (AppFatal | IOException e) {
             System.out.println("Fatal error: " + e.getMessage());

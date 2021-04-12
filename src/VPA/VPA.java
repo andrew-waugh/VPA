@@ -36,10 +36,41 @@ public final class VPA {
     private V3Process v3p;          // class to process the V3 VEOs
     private FileFormat ff;          // class to contain file format info
     private LTSF ltsf;              // valid long term preservation formats
-    private ResultSummary results;  // summary of results
 
     // logging
     private final static Logger LOG = Logger.getLogger("VPA.VPA");
+    
+    /**
+     * Report on version...
+     *
+     * <pre>
+     * 20180601 1.0 Initial release
+     * 20180626 1.1 Bug fixes & improved handling of PID testing
+     * 20180813 2.0 Major revision, bug fixes & improvements
+     * 20180824 2.1 Updated ids in SAMS, bug fixes
+     * 20180831 2.2 Minor fixes
+     * 20181031 2.3 More bug fixes, particularly around handling of JSON
+     * 20190727 2.4 More bug fixes
+     * 20191107 2.5 Improved error messages
+     * 20191122 2.6 Added -lite mode & improved diagnostic messages
+     * 20191204 2.7 Added -sample & -ignoreAbove mode
+     * 20200113 2.8 Now reports file name instead of file path
+     * 20200505 2.9 Bug fixes
+     * 20200213 2.10 Temporary alteration handling of titles to test AMS
+     * 20200217 2.11 Minor bug fix
+     * 20200219 2.12 Added parentIPSeqNo to JSON a/c request AMS team
+     * 20200224 2.13 Altered PIDs a/c request SAMS team
+     * 20200311 2.14 ipLabel is not output if null a/c request AMS team & changed handling of object identifiers
+     * 20200320 2.15 Fixed bug in reading non-standard metadata
+     * 20200605 2.16 Added migration flag for VEO migration from old DSA
+     * 20200716 2.17 Changed to use common LTSF handling for V2 & V3 VEOs
+     * 20200306 2.18 Added support for a result summary
+     * 20210412 2.19 Added version, and standardised reporting in run
+     * </pre>
+     */
+    static String version() {
+        return ("2.19");
+    }
 
     /**
      * Set up for processing VEOs
