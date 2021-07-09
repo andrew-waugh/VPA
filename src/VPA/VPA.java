@@ -66,10 +66,11 @@ public final class VPA {
      * 20200716 2.17 Changed to use common LTSF handling for V2 & V3 VEOs
      * 20200306 2.18 Added support for a result summary
      * 20210412 2.19 Added version, and standardised reporting in run
+     * 20210709 2.20 Added support for PISA in BAT file
      * </pre>
      */
     static String version() {
-        return ("2.19");
+        return ("2.20");
     }
 
     /**
