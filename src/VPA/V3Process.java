@@ -506,7 +506,8 @@ public final class V3Process {
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:created":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:available":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:dateCopyrighted":
-                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:dateLicensed":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/aglsterms:dateLicensed":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:dateLicensed": // incorrect namespace in original VERS V3 spec
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:issued":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:modified":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:valid":
@@ -684,7 +685,8 @@ public final class V3Process {
                     }
                     io.dates.add(new Date("DateCopyrighted", value));
                     break;
-                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:dateLicensed":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/aglsterms:dateLicensed":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:dateLicensed": // incorrect namespace in original VERS V3 spec
                     if (!aglsMP) {
                         break;
                     }

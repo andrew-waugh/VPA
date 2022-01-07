@@ -67,10 +67,11 @@ public final class VPA {
      * 20200306 2.18 Added support for a result summary
      * 20210412 2.19 Added version, and standardised reporting in run
      * 20210709 2.20 Added support for PISA in BAT file
+     * 20220107 2.21 Changed V3 property 'dcterms:dateLicensed' to 'aglsterms:' a/c incorrect namespace in VERS V3 spec
      * </pre>
      */
     static String version() {
-        return ("2.20");
+        return ("2.21");
     }
 
     /**
