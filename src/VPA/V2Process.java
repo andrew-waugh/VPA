@@ -333,6 +333,7 @@ public class V2Process {
         private InformationObject io;       // information object read from VEO
         private int docNo;                  // document number in VEO
         private InformationPiece document;  // current document being parsed
+        private String documentSource;      // contents of vers:DocumentSource from current document
         private int encNo;                  // encoding number
         private ContentFile encoding;       // current encoding being parsed
         private HashMap<String, ContentFile> encodingsToFind; // list of encodingsToFind we are looking for
@@ -668,6 +669,7 @@ public class V2Process {
                 case "vers:RecordMetadata/vers:VEOIdentifier/vers:VERSRecordIdentifier/vers:Text": //tc
                 case "vers:FileMetadata/vers:VEOIdentifier/vers:VERSRecordIdentifier/vers:Text":
                 case "vers:Document/vers:DocumentMetadata/vers:DocumentTitle/vers:Text": //tc
+                case "vers:Document/vers:DocumentMetadata/vers:DocumentSource/vers:Text": //tc
                     if (finalVersion) {
                         he = new HandleElement(HandleElement.VALUE_TO_STRING);
                     } else {
@@ -934,6 +936,34 @@ public class V2Process {
                 case "vers:Document/vers:DocumentMetadata/vers:DocumentTitle/vers:Text":
                     if (finalVersion) {
                         document.label = value;
+                    }
+                    break;
+                // see the case for vers:Document/vers:Encoding
+                case "vers:Document/vers:DocumentMetadata/vers:DocumentSource/vers:Text": //tc
+                    if (finalVersion) {
+                        documentSource = value;
+                    }
+                    break;
+                // TRIM V2 VEOs are broken. They put the vers:SourceFileIdentifier
+                // in the vers:DocumentSource field. To hack this, we capture the
+                // vers:DocumentSource element when it is seen. When later we
+                // finish an Encoding inside the Document, we check if the
+                // vers:SourceFileIdentifier was seen. If not, and a documentSource
+                // exists in the enclosing Document, we set the sourceFileName from
+                // that.
+                case "vers:Document/vers:Encoding":
+                    if (finalVersion) {
+                        if (encoding.sourceFileName == null || encoding.sourceFileName.equals("") || encoding.sourceFileName.trim().equals(" ")) {
+                            if (documentSource != null) {
+                                encoding.sourceFileName = documentSource;
+                            }
+                        }
+                    }
+                    break;
+                // see the case for vers:Document/vers:Encoding
+                case "vers:Document":
+                    if (finalVersion) {
+                        documentSource = null;
                     }
                     break;
                 case "vers:Document/vers:Encoding/vers:EncodingMetadata/vers:FileRendering/vers:RenderingKeywords":
