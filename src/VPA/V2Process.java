@@ -954,7 +954,9 @@ public class V2Process {
                 case "vers:Document/vers:Encoding":
                     if (finalVersion) {
                         if (encoding.sourceFileName == null || encoding.sourceFileName.equals("") || encoding.sourceFileName.trim().equals(" ")) {
-                            if (documentSource != null) {
+                            if (documentSource == null || documentSource.equals("") || documentSource.trim().equals(" ")) {
+                                encoding.sourceFileName = "Source file unknown";
+                            } else {
                                 encoding.sourceFileName = documentSource;
                             }
                         }
