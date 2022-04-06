@@ -585,6 +585,7 @@ public class V2Process {
                     }
 
                     // work out the file type from the file extension in the SourceFileIdentifier element (if present)
+                    // if not, use the file extension derived from vers:RenderingKeywords (if present)
                     ext = encoding.sourceFileName;
                     if (ext != null) {
                         i = ext.lastIndexOf(".");
@@ -593,6 +594,8 @@ public class V2Process {
                         } else {
                             ext = "";
                         }
+                    } else if (encoding.fileExt != null && !encoding.fileExt.equals("") && !encoding.fileExt.equals(" ")) {
+                        ext = "."+encoding.fileExt;
                     } else {
                         ext = "";
                     }
@@ -949,15 +952,31 @@ public class V2Process {
                 // vers:DocumentSource element when it is seen. When later we
                 // finish an Encoding inside the Document, we check if the
                 // vers:SourceFileIdentifier was seen. If not, and a documentSource
-                // exists in the enclosing Document, we set the sourceFileName from
-                // that.
+                // exists in the enclosing Document (it should, it's mandatory),
+                // we set the sourceFileName from that. It gets worse. Because
+                // there might be multiple Encodings with different filetypes,
+                // but having the same vers:DocumentSource we force the file
+                // extension to be the file extension from the Encoding. If
+                // the Encoding has no file encoding, we just use
+                // vers:DocumentSource and be done with it.
                 case "vers:Document/vers:Encoding":
                     if (finalVersion) {
                         if (encoding.sourceFileName == null || encoding.sourceFileName.equals("") || encoding.sourceFileName.trim().equals(" ")) {
                             if (documentSource == null || documentSource.equals("") || documentSource.trim().equals(" ")) {
                                 encoding.sourceFileName = "Source file unknown";
                             } else {
-                                encoding.sourceFileName = documentSource;
+                                String safe = documentSource.replaceAll("\\\\", "/");
+                                Path p = Paths.get(safe);
+                                String filename = p.getFileName().toString();
+                                if (encoding.fileExt != null) {
+                                    int i1 = filename.lastIndexOf(".");
+                                    if (i1 != -1) {
+                                        filename = filename.substring(0, i1) + "." + encoding.fileExt;
+                                    } else {
+                                        filename = filename + "." + encoding.fileExt;
+                                    }
+                                }
+                                encoding.sourceFileName = filename;
                             }
                         }
                     }

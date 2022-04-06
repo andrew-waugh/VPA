@@ -68,11 +68,12 @@ public final class VPA {
      * 20210412 2.19 Added version, and standardised reporting in run
      * 20210709 2.20 Added support for PISA in BAT file
      * 20220107 2.21 Changed V3 property 'dcterms:dateLicensed' to 'aglsterms:' a/c incorrect namespace in VERS V3 spec
-     * 20200127 2.22 Hack to handle broken VERS V2 VEOs from TRIM (use vers:DocumentSource if vers:SourceFileIdentifier is not present)
+     * 20220127 2.22 Hack to handle broken VERS V2 VEOs from TRIM (use vers:DocumentSource if vers:SourceFileIdentifier is not present)
+     * 20220406 2.23 More hacking to handle broken TRIM VEOs - now only take the final filename if vers:DocumentSource has a filename
      * </pre>
      */
     static String version() {
-        return ("2.22");
+        return ("2.23");
     }
 
     /**

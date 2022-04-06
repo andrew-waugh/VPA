@@ -44,16 +44,17 @@ public final class ContentFile {
         refDoc = null;
         fileSize = 0;
     }
-    
+
     /**
      * Generate a SAMS URI for this Content File. This method returns null if
      * there is no actual content file.
-     * 
-     * The SAMS URI consists of a prefix (https://content.prov.vic.gov.au/rest/records/),
-     * followed by the suffix of the IO PID, divided into groups separated by
-     * '/', followed by the sequence number of this content file in the *VEO*
-     * (note, not IO), followed by the relative path of the file location.
-     * 
+     *
+     * The SAMS URI consists of a prefix
+     * (https://content.prov.vic.gov.au/rest/records/), followed by the suffix
+     * of the IO PID, divided into groups separated by '/', followed by the
+     * sequence number of this content file in the *VEO* (note, not IO),
+     * followed by the relative path of the file location.
+     *
      * @return URL used to obtain the content file from SAMS
      * @throws VERSCommon.AppError if cannot located the prefix and the suffix
      */
@@ -62,13 +63,13 @@ public final class ContentFile {
         String s;
         String token[];
         int i, j, k;
-        
+
         if (fileLocation == null) {
             return null;
         }
         sb.append("https://content.prov.vic.gov.au/rest/records/");
         s = parent.parent.ioPID;
-        
+
         // get the suffix (only of the PID)
         token = s.split("/");
         switch (token.length) {
@@ -82,13 +83,13 @@ public final class ContentFile {
                 break;
             // something odd... multiple '/'...
             default:
-                throw new AppError("PID does not have a prefix and suffix separated by a '/': '"+s+"' (ContentFile.getSAMSuri)");
+                throw new AppError("PID does not have a prefix and suffix separated by a '/': '" + s + "' (ContentFile.getSAMSuri)");
         }
-        
+
         // suppress the hyphens in the suffix, and put in five levels
         j = 0;
         k = 0;
-        for (i=0; i<s.length(); i++) {
+        for (i = 0; i < s.length(); i++) {
             // This code was removed at the request of the SAMS developer - the
             // original idea was that the hyphens would not appear in the URL
             /* if (s.charAt(i) == '-') {
@@ -112,6 +113,7 @@ public final class ContentFile {
 
     /**
      * Output content file as a String
+     *
      * @return string representation
      */
     @Override
@@ -121,7 +123,9 @@ public final class ContentFile {
         sb.append("      {\n");
         sb.append("      \"cfSeqNo\":" + seqNbr + ",\n");
         sb.append("      \"parentIPSeqNo\":" + parent.seqNbr + ",\n");
-        sb.append("      \"sourceFileName\":\"" + Json.safe(sourceFileName) + "\",\n");
+        if (sourceFileName != null) {
+            sb.append("      \"sourceFileName\":\"" + Json.safe(sourceFileName) + "\",\n");
+        }
         sb.append("      \"sourceFileExtension\":\"" + Json.safe(fileExt) + "\",\n");
         if (fileLocation != null) {
             sb.append("      \"fileLocation\":\"" + Json.safe(fileLocation.toString().replace('\\', '/')) + "\",\n");
@@ -141,7 +145,9 @@ public final class ContentFile {
         JSONObject j = new JSONObject();
         j.put("cfSeqNo", seqNbr);
         j.put("parentIPSeqNo", parent.seqNbr);
-        j.put("sourceFileName", sourceFileName);
+        if (sourceFileName != null) {
+            j.put("sourceFileName", sourceFileName);
+        }
         j.put("sourceFileExtension", fileExt);
         if (fileLocation != null) {
             j.put("fileLocation", fileLocation.toString().replace('\\', '/'));
