@@ -70,10 +70,11 @@ public final class VPA {
      * 20220107 2.21 Changed V3 property 'dcterms:dateLicensed' to 'aglsterms:' a/c incorrect namespace in VERS V3 spec
      * 20220127 2.22 Hack to handle broken VERS V2 VEOs from TRIM (use vers:DocumentSource if vers:SourceFileIdentifier is not present)
      * 20220406 2.23 More hacking to handle broken TRIM VEOs - now only take the final filename if vers:DocumentSource has a filename
+     * 20220407 2.24 Forced JSON output in packages to be UTF-8 encoded
      * </pre>
      */
     static String version() {
-        return ("2.23");
+        return ("2.24");
     }
 
     /**

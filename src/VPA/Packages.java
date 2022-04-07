@@ -12,6 +12,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -118,7 +119,7 @@ public final class Packages {
                 throw new AppError("Packages.createAMSPackage(): Couldn't create JSON IO file '" + p.toString() + "' because: " + fnfe.getMessage());
             }
             bos = new BufferedOutputStream(fos);
-            osw = new OutputStreamWriter(bos);
+            osw = new OutputStreamWriter(bos, Charset.forName("UTF-8"));
             try {
                 osw.write(s);
             } catch (IOException ioe) {
@@ -167,7 +168,7 @@ public final class Packages {
             throw new AppError("Packages.createSAMSPackage(): Couldn't create '" + p.toString() + "' as: " + fnfe.getMessage());
         }
         bos = new BufferedOutputStream(fos);
-        osw = new OutputStreamWriter(bos);
+        osw = new OutputStreamWriter(bos, Charset.forName("UTF-8"));
         try {
             osw.write("VEO PID,Seq Nbr,RI PID,SAMS URI,File name rel to SAMS dir,MIME type\r\n");
 
@@ -327,7 +328,7 @@ public final class Packages {
             throw new AppError("Packages.createDASPackage(): Couldn't create PIDS.json file as: " + fnfe.getMessage());
         }
         bos = new BufferedOutputStream(fos);
-        osw = new OutputStreamWriter(bos);
+        osw = new OutputStreamWriter(bos, Charset.forName("UTF-8"));
         try {
             osw.write(Json.prettyPrintJSON(j1.toJSONString()));
         } catch (IOException ioe) {
