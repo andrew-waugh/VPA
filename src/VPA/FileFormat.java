@@ -8,9 +8,12 @@ package VPA;
 
 import VERSCommon.AppFatal;
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.HashMap;
 
@@ -55,7 +58,8 @@ public final class FileFormat {
      */
     private void readFormatFile(Path supportDir) throws AppFatal {
         Path f;
-        FileReader fr;
+        FileInputStream fis;
+        InputStreamReader isr;
         BufferedReader br;
         String s;
         String[] tokens;
@@ -66,11 +70,13 @@ public final class FileFormat {
         f = supportDir.resolve("mime.types.txt");
 
         // open mime.types.txt for reading
-        fr = null;
+        fis = null;
+        isr = null;
         br = null;
         try {
-            fr = new FileReader(f.toString());
-            br = new BufferedReader(fr);
+            fis = new FileInputStream(f.toString());
+            isr = new InputStreamReader(fis, Charset.forName("UTF-8"));
+            br = new BufferedReader(isr);
 
             // go through mime.types.txt line by line
             while ((s = br.readLine()) != null) {
@@ -127,9 +133,15 @@ public final class FileFormat {
                 } catch (IOException e) {
                     /* ignore */ }
             }
-            if (fr != null) {
+            if (isr != null) {
                 try {
-                    fr.close();
+                    isr.close();
+                } catch (IOException e) {
+                    /* ignore */ }
+            }
+            if (fis != null) {
+                try {
+                    fis.close();
                 } catch (IOException e) {
                     /* ignore */ }
             }

@@ -40,11 +40,14 @@ import VERSCommon.AppError;
 import VERSCommon.ResultSummary;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -670,7 +673,8 @@ public class DAIngest {
         String recordName;
         Path veoDir, pidFile;
         Runtime rt;
-        FileReader fr;
+        FileInputStream fis;
+        InputStreamReader isr;
         BufferedReader br;
         StringBuilder sb;
         String line;
@@ -699,13 +703,15 @@ public class DAIngest {
         pidFile = veoDir.resolve("DAS").resolve("PIDS.json");
         try {
             sb = new StringBuilder();
-            fr = new FileReader(pidFile.toFile());
-            br = new BufferedReader(fr);
+            fis = new FileInputStream(pidFile.toFile());
+            isr = new InputStreamReader(fis, Charset.forName("UTF-8"));
+            br = new BufferedReader(isr);
             while ((line = br.readLine()) != null) {
                 sb.append(line);
             }
             br.close();
-            fr.close();
+            isr.close();
+            fis.close();
         } catch (FileNotFoundException e) {
             System.out.println("");
             System.out.println("PIDS.json file could not be found: " + e.getMessage());
@@ -807,13 +813,15 @@ public class DAIngest {
         pidFile = veoDir.resolve("DAS").resolve("PIDS.json");
         try {
             sb = new StringBuilder();
-            fr = new FileReader(pidFile.toFile());
-            br = new BufferedReader(fr);
+            fis = new FileInputStream(pidFile.toFile());
+            isr = new InputStreamReader(fis, Charset.forName("UTF-8"));
+            br = new BufferedReader(isr);
             while ((line = br.readLine()) != null) {
                 sb.append(line);
             }
             br.close();
-            fr.close();
+            isr.close();
+            fis.close();
         } catch (FileNotFoundException e) {
             System.out.println("PIDS.json file could not be found: " + e.getMessage());
             return;
@@ -826,13 +834,15 @@ public class DAIngest {
         pidFile = veoDir.resolve("DAS").resolve("PIDS.json");
         try {
             sb = new StringBuilder();
-            fr = new FileReader(pidFile.toFile());
-            br = new BufferedReader(fr);
+            fis = new FileInputStream(pidFile.toFile());
+            isr = new InputStreamReader(fis, Charset.forName("UTF-8"));
+            br = new BufferedReader(isr);
             while ((line = br.readLine()) != null) {
                 sb.append(line);
             }
             br.close();
-            fr.close();
+            isr.close();
+            fis.close();
         } catch (FileNotFoundException e) {
             System.out.println("PIDS.json file could not be found: " + e.getMessage());
             return;
