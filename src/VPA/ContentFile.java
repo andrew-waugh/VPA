@@ -18,6 +18,7 @@ public final class ContentFile {
     InformationPiece parent;    // containing information piece
     int seqNbr;                 // sequence number of Content File in VEO
     String sourceFileName;      // original file name from VEO (V2 only)
+    String versId;              // identifier of the Content File in the VEO (V2 only)
     String fileExt;             // file type based on data in VEO
     boolean base64;             // true if binary file is encoded in Base64 (V2 only)
     Path fileLocation;          // location of unpacked binary file relative to root of the VEO (null if refDoc is present)
@@ -37,6 +38,7 @@ public final class ContentFile {
         parent = null;
         seqNbr = 0;
         sourceFileName = null;
+        versId = null;
         fileExt = null;
         base64 = false;
         fileLocation = null;
