@@ -29,7 +29,10 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -165,7 +168,7 @@ public class V2Process {
 
             // create abbreviated VEO, and validate it
             out = new StringWriter();
-            p = Paths.get(packageDir.toString(), "abreviatedVEO.xml");
+            p = packageDir.resolve("abreviatedVEO.xml");
             createAbbrVEO(p);
             if (!veoc.vpaTestVEO(veo, p, out)) {
                 return new VEOResult(recordName, VEOResult.V2_VEO, false, out.toString(), null, started);
@@ -547,7 +550,7 @@ public class V2Process {
                     if (ext != null) {
                         i = ext.lastIndexOf(".");
                         if (i != -1 && i < ext.length()) {
-                            ext = ext.substring(i+1);
+                            ext = ext.substring(i + 1);
                         } else {
                             ext = "";
                         }
@@ -949,6 +952,7 @@ public class V2Process {
                         documentSource = value;
                     }
                     break;
+                    
                 // TRIM V2 VEOs are broken. They do not include a
                 // vers:SourceFileName in an Encoding. Since this is required
                 // in Collective Access for the web side, we must construct one.
@@ -969,8 +973,22 @@ public class V2Process {
                             encoding.sourceFileName = encoding.versId + "." + encoding.fileExt;
                             if (documentSource != null && !documentSource.equals("") && !documentSource.trim().equals(" ")) {
                                 String safe = documentSource.replaceAll("\\\\", "/");
-                                Path p = Paths.get(safe);
-                                String filename = p.getFileName().toString();
+
+                                Path p;
+                                String filename;
+                                try {
+                                    p = Paths.get(safe);
+                                    filename = p.getFileName().toString();
+                                } catch (InvalidPathException ipe) {
+                                    try {
+                                        URL url = new URL(safe);
+                                        p = Paths.get(url.getPath());
+                                        filename = p.getFileName().toString();
+                                    } catch (MalformedURLException | InvalidPathException e) {
+                                        break;
+                                    }
+                                }
+
                                 int i1 = filename.lastIndexOf(".");
                                 if (i1 != -1) {
                                     if (encoding.fileExt != null && !encoding.fileExt.equals("") && !encoding.fileExt.equals("")) {
@@ -1042,9 +1060,31 @@ public class V2Process {
                     break;
                 case "vers:Document/vers:Encoding/vers:EncodingMetadata/vers:SourceFileIdentifier":
                     if (finalVersion) {
+                        Path p;
+
+                        // convert Windows file separators to UNIX style
                         String safe = value.replaceAll("\\\\", "/");
-                        Path p = Paths.get(safe);
-                        encoding.sourceFileName = p.getFileName().toString();
+
+                        // we are trying to find the source file name from the
+                        // vers:SourceFileIdentifier. First, try to see if the
+                        // vers:SourceFileIdentifier is a file system path; if
+                        // so the name is the final component. If it isn't a
+                        // file system path, see if it is a URL; if so extract
+                        // the path component and the name is the final
+                        // component. Otherwise, just use the whole
+                        // vers:SourceFileIdentifier
+                        try {
+                            p = Paths.get(safe);
+                            encoding.sourceFileName = p.getFileName().toString();
+                        } catch (InvalidPathException ipe) {
+                            try {
+                                URL url = new URL(safe);
+                                p = Paths.get(url.getPath());
+                                encoding.sourceFileName = p.getFileName().toString();
+                            } catch (MalformedURLException | InvalidPathException e) {
+                                encoding.sourceFileName = null;
+                            }
+                        }
                     }
                     break;
                 case "vers:VERSEncapsulatedObject/vers:SignedObject/vers:ObjectContent/vers:ModifiedVEO/vers:OriginalVEO/vers:SignedObject/vers:ObjectContent/vers:Record/vers:Document/vers:Encoding/vers:DocumentData":

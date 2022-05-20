@@ -72,10 +72,11 @@ public final class VPA {
      * 20220406 2.23 More hacking to handle broken TRIM VEOs - now only take the final filename if vers:DocumentSource has a filename
      * 20220407 2.24 Forced JSON output in packages to be UTF-8 encoded
      * 20220504 2.25 Adjusted extraction of file extensions in V2 VEO for dealing with TRIM VEOs
+     * 20220520 2.26 More adjustments for TRIM VEOs. Now handles URLs in vers:SourceFileIdentifier & vers:DocumentSource. Changed to catch invalid file names (e.g. Paths.get() & in resolve())
      * </pre>
      */
     static String version() {
-        return ("2.25");
+        return ("2.26");
     }
 
     /**

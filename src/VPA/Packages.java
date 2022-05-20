@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import org.json.simple.JSONArray;
@@ -239,7 +240,11 @@ public final class Packages {
         p2 = samsDir;
         try {
             for (i = 0; i < p1.getNameCount(); i++) {
-                p2 = p2.resolve(p1.getName(i));
+                try {
+                    p2 = p2.resolve(p1.getName(i));
+                } catch (InvalidPathException ipe) {
+                    throw new AppError("VEO directory '" + p1.getName(i) + "' is an invalid file name: " + ipe.getMessage());
+                }
                 if (i != p1.getNameCount() - 1) { // directory
                     if (!Files.exists(p2)) {
                         Files.createDirectory(p2);
@@ -308,6 +313,8 @@ public final class Packages {
             Files.copy(veo, dasDir.resolve(veo.getFileName()));
         } catch (IOException ioe) {
             throw new AppError("Packages.createDASPackage(): Failed copying original VEO to DAS package: " + ioe.getMessage());
+        } catch (InvalidPathException ipe) {
+            throw new AppError("Packages.createDASPackage(): '" + veo.getFileName() + "' is an invalid file name: " + ipe.getMessage());
         }
 
         // output the PID table
@@ -382,6 +389,6 @@ public final class Packages {
                 // ignore
             }
         }
-        */
+         */
     }
 }

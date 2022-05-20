@@ -394,7 +394,11 @@ public class DAIngest {
     private Path checkFile(String type, String name, boolean isDirectory) throws AppFatal {
         Path p;
 
-        p = Paths.get(name);
+        try {
+            p = Paths.get(name);
+        } catch (InvalidPathException ipe) {
+            throw new AppFatal(classname, 9, type + " '" + name + "' is not a valid file name");
+        }
 
         if (!Files.exists(p)) {
             throw new AppFatal(classname, 6, type + " '" + p.toAbsolutePath().toString() + "' does not exist");
@@ -452,7 +456,11 @@ public class DAIngest {
                 if (file == null) {
                     continue;
                 }
-                processFile(Paths.get(file), true);
+                try {
+                    processFile(Paths.get(file), true);
+                } catch (InvalidPathException ipe) {
+                    LOG.log(Level.WARNING, "***Ignoring file ''{0}'' as the file name was invalid: {1}", new Object[]{file, ipe.getMessage()});
+                }
             }
         }
     }
@@ -541,6 +549,7 @@ public class DAIngest {
         // reset, free memory, and print status
         // System.out.print(LocalDateTime.now().toString() + " Processing: '" + veo.normalize().toString() + "' ");
         // LOG.LOG(Level.INFO, "{0} Processing ''{1}''", new Object[]{((new Date()).getTime() / 1000), veo.toString()});
+        
         // create a outputDir in the outputDir in which to put the record content
         String s = veo.getFileName().toString();
         if ((i = s.lastIndexOf('.')) != -1) {
@@ -549,7 +558,12 @@ public class DAIngest {
             recordName = s;
         }
         recordName = recordName.replace('.', '-').trim();
-        veoDir = outputDirectory.resolve(recordName);
+        try {
+            veoDir = outputDirectory.resolve(recordName);
+        } catch (InvalidPathException ipe) {
+            System.out.println("VEO directory '" + recordName + "' is an invalid file name: "+ipe.getMessage());
+            return false;
+        }
         if (!deleteDirectory(veoDir)) {
             System.out.println("VEO directory '" + veoDir.normalize().toString() + "' already exists & couldn't be deleted");
             return false;
@@ -697,7 +711,12 @@ public class DAIngest {
             recordName = s;
         }
         recordName = recordName.replace('.', '-').trim();
-        veoDir = outputDirectory.resolve(recordName);
+        try {
+            veoDir = outputDirectory.resolve(recordName);
+        } catch (InvalidPathException ipe) {
+            System.out.println("VEO directory '" + recordName + "' is an invalid file name: "+ipe.getMessage());
+            return;
+        }
 
         // get the PIDs from the DAS package
         pidFile = veoDir.resolve("DAS").resolve("PIDS.json");
@@ -723,7 +742,12 @@ public class DAIngest {
         }
         pids = sb.toString();
 
-        veoDir = outputDirectory.resolve(recordName + "-r");
+        try {
+            veoDir = outputDirectory.resolve(recordName + "-r");
+        } catch (InvalidPathException ipe) {
+            System.out.println("VEO directory '" + recordName + "' is an invalid file name: "+ipe.getMessage());
+            return;
+        }
         if (!deleteDirectory(veoDir)) {
             System.out.println("");
             System.out.println("VEO directory '" + veoDir.toString() + "' already exists & couldn't be deleted");
@@ -809,7 +833,12 @@ public class DAIngest {
         }
 
         // compare the old and new SAMS directories
-        veoDir = outputDirectory.resolve(recordName);
+        try {
+            veoDir = outputDirectory.resolve(recordName);
+        } catch (InvalidPathException ipe) {
+            System.out.println("VEO directory '" + recordName + "' is an invalid file name: "+ipe.getMessage());
+            return;
+        }
         pidFile = veoDir.resolve("DAS").resolve("PIDS.json");
         try {
             sb = new StringBuilder();
@@ -830,7 +859,12 @@ public class DAIngest {
             return;
         }
         pids = sb.toString();
-        veoDir = outputDirectory.resolve(recordName + "-r");
+        try {
+            veoDir = outputDirectory.resolve(recordName + "-r");
+        } catch (InvalidPathException ipe) {
+            System.out.println("VEO directory '" + recordName + "' is an invalid file name: "+ipe.getMessage());
+            return;
+        }
         pidFile = veoDir.resolve("DAS").resolve("PIDS.json");
         try {
             sb = new StringBuilder();
