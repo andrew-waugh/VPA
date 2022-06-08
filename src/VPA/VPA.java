@@ -74,10 +74,11 @@ public final class VPA {
      * 20220504 2.25 Adjusted extraction of file extensions in V2 VEO for dealing with TRIM VEOs
      * 20220520 2.26 More adjustments for TRIM VEOs. Now handles URLs in vers:SourceFileIdentifier & vers:DocumentSource. Changed to catch invalid file names (e.g. Paths.get() & in resolve
      * 20220608 2.27 More adjustments for handling of file extensions
+     * 20220608 2.28 Forcing file extensions of source file name to be correct (according to rendering keywords). Comments cleaned up
      * </pre>
      */
     static String version() {
-        return ("2.27");
+        return ("2.28");
     }
 
     /**
