@@ -544,23 +544,6 @@ public class V2Process {
                     }
                     encoding.versId = versid;
 
-                    // work out the file type from the file extension in the SourceFileIdentifier element (if present)
-                    // if not, use the file extension derived from vers:RenderingKeywords (if present)
-                    ext = encoding.sourceFileName;
-                    if (ext != null) {
-                        i = ext.lastIndexOf(".");
-                        if (i != -1 && i < ext.length()) {
-                            ext = ext.substring(i + 1);
-                        } else {
-                            ext = "";
-                        }
-                    } else if (encoding.fileExt != null && !encoding.fileExt.equals("") && !encoding.fileExt.equals(" ")) {
-                        ext = encoding.fileExt;
-                    } else {
-                        ext = "";
-                    }
-                    encoding.fileExt = ext;
-
                     // if light, don't include the DocumentData
                     if (light) {
                         he = null;
@@ -607,7 +590,11 @@ public class V2Process {
 
                     // put all the content files in a docdata directory in the unpacked directory
                     encoding.rootFileLocn = veoDir.resolve("docdata");
-                    encoding.fileLocation = Paths.get((versid + "." + ext));
+                    if (encoding.fileExt != null) {
+                        encoding.fileLocation = Paths.get((versid + "." + encoding.fileExt));
+                    } else {
+                        encoding.fileLocation = Paths.get(versid);
+                    }
                     encoding.seqNbr = seqNo;
                     seqNo++;
                     he = new HandleElement(HandleElement.VALUE_TO_FILE, encoding.base64, encoding.rootFileLocn.resolve(encoding.fileLocation));
@@ -952,7 +939,7 @@ public class V2Process {
                         documentSource = value;
                     }
                     break;
-                    
+
                 // TRIM V2 VEOs are broken. They do not include a
                 // vers:SourceFileName in an Encoding. Since this is required
                 // in Collective Access for the web side, we must construct one.
@@ -969,7 +956,17 @@ public class V2Process {
                 // in the document source. Ugh.
                 case "vers:Document/vers:Encoding":
                     if (finalVersion) {
-                        if (encoding.sourceFileName == null || encoding.sourceFileName.equals("") || encoding.sourceFileName.trim().equals(" ")) {
+                        int i1;
+                        if (encoding.fileExt == null && encoding.sourceFileName != null) {
+                            i1 = encoding.sourceFileName.lastIndexOf(".");
+                            if (i1 != -1 && i1 < encoding.sourceFileName.length()) {
+                                encoding.fileExt = encoding.sourceFileName.substring(i1+1);
+                                if (encoding.fileExt.equals("") || encoding.fileExt.trim().equals(" ")) {
+                                    encoding.fileExt = null;
+                                }
+                            }
+                        }
+                        if (encoding.sourceFileName == null) {
                             encoding.sourceFileName = encoding.versId + "." + encoding.fileExt;
                             if (documentSource != null && !documentSource.equals("") && !documentSource.trim().equals(" ")) {
                                 String safe = documentSource.replaceAll("\\\\", "/");
@@ -989,11 +986,8 @@ public class V2Process {
                                     }
                                 }
 
-                                int i1 = filename.lastIndexOf(".");
+                                i1 = filename.lastIndexOf(".");
                                 if (i1 != -1) {
-                                    if (encoding.fileExt != null && !encoding.fileExt.equals("") && !encoding.fileExt.equals("")) {
-                                        filename = filename.substring(0, i1) + "." + encoding.fileExt;
-                                    }
                                     encoding.sourceFileName = filename;
                                 }
                             }
@@ -1034,7 +1028,8 @@ public class V2Process {
                         }
                     }
 
-                    // the final format is assumed to be the file type. This may
+                    // the final format is assumed to be the file type except if
+                    // is .b64 or .B64. The format may
                     // be a file extension or a MIME type. If a file extension
                     // it should be prefixed by a '.', and not have a '.' if a
                     // MIME type, but we cannot depend on this. So, we first
@@ -1043,14 +1038,16 @@ public class V2Process {
                     // if present. The candidate format is then looked up in a
                     // list of recognised MIME types, and if it was found replace
                     // the candidate file extension. The result of all this is
-                    // the file extension. NOTE that the stored file extension
+                    // the file extension. If the final ex NOTE that the stored file extension
                     // is without the leading '.'
-                    if (s1.length == 0) {
-                        encoding.fileExt = "";
-                    } else {
+                    encoding.fileExt = null;
+                    if (s1.length > 0) {
                         String fileExt = s1[s1.length - 1].trim();
                         if (fileExt.startsWith(".")) {
                             fileExt = fileExt.substring(1);
+                            if (fileExt.contains("b64") || fileExt.contains("B64")) {
+                                break;
+                            }
                         }
                         if ((s = ff.mimeType2FileExt(fileExt)) != null) {
                             fileExt = s;
@@ -1084,6 +1081,9 @@ public class V2Process {
                             } catch (MalformedURLException | InvalidPathException e) {
                                 encoding.sourceFileName = null;
                             }
+                        }
+                        if (encoding.sourceFileName != null && (encoding.sourceFileName.equals("") || encoding.sourceFileName.trim().equals(" "))) {
+                            encoding.sourceFileName = null;
                         }
                     }
                     break;
