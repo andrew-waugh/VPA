@@ -433,8 +433,6 @@ public class V2Process {
         @Override
         public HandleElement startElement(String eFound, Attributes attributes)
                 throws SAXException {
-            int i;
-            String ext;
             HandleElement he;
 
             // record the top level elements of a V2 VEO so that we can output them
@@ -498,6 +496,7 @@ public class V2Process {
                     }
                 }
             }
+
             // match the path to see if do we do something special within a signed object
             he = null;
             switch (eFound) {
@@ -543,6 +542,12 @@ public class V2Process {
                         versid = "Revision-1-Document-" + docNo + "-Encoding-" + encNo + "-DocumentData";
                     }
                     encoding.versId = versid;
+
+                    // if we still have no valid source file name, use the
+                    // versId
+                    if (encoding.sourceFileName == null) {
+                        encoding.sourceFileName = encoding.versId + "." + encoding.fileExt;
+                    }
 
                     // if light, don't include the DocumentData
                     if (light) {
@@ -940,34 +945,32 @@ public class V2Process {
                     }
                     break;
 
-                // TRIM V2 VEOs are broken. They do not include a
-                // vers:SourceFileName in an Encoding. Since this is required
-                // in Collective Access for the web side, we must construct one.
-                // If nothing better can be found, we use the artificial file
-                // name constructed from the vers:Id in the vers:DocumentData
-                // element (found in the fileLocation value). But, we prefer
-                // to use the vers:DocumentSource element if 1) present, and
-                // 2) if the final component of this element looks like a file
-                // name (i.e. has a file extension). If so, we replace the file
-                // extension with that obtained from vers:RenderingKeywords
-                // (if present) as that handles the case if the Document has
-                // multiple encodings. If we couldn't extract a file extension
-                // from vers:RenderingKeywords, we just use the file extension
-                // in the document source. Ugh.
-                case "vers:Document/vers:Encoding":
+                case "vers:Document/vers:Encoding/vers:EncodingMetadata":
                     if (finalVersion) {
                         int i1;
+
+                        // if no valid file extension was found in
+                        // vers:RenderingKeywords (or the RenderingKeywords
+                        // element was missing), attempt to obtain a file
+                        // extension from vers:SourceFileIdentifier (if one was
+                        // present).
                         if (encoding.fileExt == null && encoding.sourceFileName != null) {
                             i1 = encoding.sourceFileName.lastIndexOf(".");
                             if (i1 != -1 && i1 < encoding.sourceFileName.length()) {
-                                encoding.fileExt = encoding.sourceFileName.substring(i1+1);
+                                encoding.fileExt = encoding.sourceFileName.substring(i1 + 1);
                                 if (encoding.fileExt.equals("") || encoding.fileExt.trim().equals(" ")) {
                                     encoding.fileExt = null;
                                 }
                             }
                         }
+
+                        // if no valid source file name was found in
+                        // vers:SourceFileIdentifier (or the SourceFileIdentifier
+                        // element was missing), attempt to obtain one from
+                        // vers:DocumentSource, but only if the contents of
+                        // vers:DocumentSource looks like a file reference (i.e.
+                        // has a file extension.
                         if (encoding.sourceFileName == null) {
-                            encoding.sourceFileName = encoding.versId + "." + encoding.fileExt;
                             if (documentSource != null && !documentSource.equals("") && !documentSource.trim().equals(" ")) {
                                 String safe = documentSource.replaceAll("\\\\", "/");
 
@@ -976,19 +979,36 @@ public class V2Process {
                                 try {
                                     p = Paths.get(safe);
                                     filename = p.getFileName().toString();
+                                    if (filename.lastIndexOf(".") != -1) {
+                                        encoding.sourceFileName = filename;
+                                    }
                                 } catch (InvalidPathException ipe) {
                                     try {
                                         URL url = new URL(safe);
                                         p = Paths.get(url.getPath());
                                         filename = p.getFileName().toString();
+                                        if (filename.lastIndexOf(".") != -1) {
+                                            encoding.sourceFileName = filename;
+                                        }
                                     } catch (MalformedURLException | InvalidPathException e) {
-                                        break;
+                                        encoding.sourceFileName = null;
                                     }
                                 }
+                            }
+                        }
 
-                                i1 = filename.lastIndexOf(".");
-                                if (i1 != -1) {
-                                    encoding.sourceFileName = filename;
+                        // sanity check that the source file name has the correct
+                        // file extension. If it does NOT, add the correct file
+                        // extension to the end.
+                        if (encoding.fileExt != null && encoding.sourceFileName != null) {
+                            String s = encoding.sourceFileName;
+                            i1 = s.lastIndexOf(".");
+                            if (i1 == -1 || i1 == s.length()) {
+                                encoding.sourceFileName = s + "." + encoding.fileExt;
+                            } else {
+                                String pExt = s.substring(i1 + 1).trim().toLowerCase();
+                                if (!pExt.equals(encoding.fileExt)) {
+                                    encoding.sourceFileName = s + "." + encoding.fileExt;
                                 }
                             }
                         }
@@ -1038,7 +1058,7 @@ public class V2Process {
                     // if present. The candidate format is then looked up in a
                     // list of recognised MIME types, and if it was found replace
                     // the candidate file extension. The result of all this is
-                    // the file extension. If the final ex NOTE that the stored file extension
+                    // the file extension. NOTE that the stored file extension
                     // is without the leading '.'
                     encoding.fileExt = null;
                     if (s1.length > 0) {
