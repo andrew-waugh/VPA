@@ -75,10 +75,11 @@ public final class VPA {
      * 20220520 2.26 More adjustments for TRIM VEOs. Now handles URLs in vers:SourceFileIdentifier & vers:DocumentSource. Changed to catch invalid file names (e.g. Paths.get() & in resolve
      * 20220608 2.27 More adjustments for handling of file extensions
      * 20220608 2.28 Forcing file extensions of source file name to be correct (according to rendering keywords). Comments cleaned up
+     * 20220615 2.29 Now accepts metadata schema id http://www.prov.vic.gov.au/VERS-as5478 as per PROS 19/05S5
      * </pre>
      */
     static String version() {
-        return ("2.28");
+        return ("2.29");
     }
 
     /**

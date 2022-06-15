@@ -645,7 +645,8 @@ public final class V3Process {
                     if (value.equals("http://prov.vic.gov.au/vers/schema/AGLS")) {
                         aglsMP = true;
                     }
-                    if (value.equals("http://prov.vic.gov.au/vers/schema/ANZS5478")) {
+                    if (value.equals("http://prov.vic.gov.au/vers/schema/ANZS5478") || 
+                        value.equals("http://www.prov.vic.gov.au/VERS-as5478")) {
                         anzs5478MP = true;
                     }
                     break;
