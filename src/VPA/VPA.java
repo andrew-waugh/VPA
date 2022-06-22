@@ -76,10 +76,11 @@ public final class VPA {
      * 20220608 2.27 More adjustments for handling of file extensions
      * 20220608 2.28 Forcing file extensions of source file name to be correct (according to rendering keywords). Comments cleaned up
      * 20220615 2.29 Now accepts metadata schema id http://www.prov.vic.gov.au/VERS-as5478 as per PROS 19/05S5
+     * 20220622 2.30 Appending a file extension to sourceFileName will not occur if the case of the file extension differs
      * </pre>
      */
     static String version() {
-        return ("2.29");
+        return ("2.30");
     }
 
     /**

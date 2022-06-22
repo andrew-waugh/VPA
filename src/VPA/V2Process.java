@@ -1006,8 +1006,8 @@ public class V2Process {
                             if (i1 == -1 || i1 == s.length()) {
                                 encoding.sourceFileName = s + "." + encoding.fileExt;
                             } else {
-                                String pExt = s.substring(i1 + 1).trim().toLowerCase();
-                                if (!pExt.equals(encoding.fileExt)) {
+                                String pExt = s.substring(i1 + 1).trim();
+                                if (!pExt.toLowerCase().equals(encoding.fileExt.toLowerCase())) {
                                     encoding.sourceFileName = s + "." + encoding.fileExt;
                                 }
                             }
