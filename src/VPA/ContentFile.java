@@ -7,6 +7,8 @@
 package VPA;
 
 import VERSCommon.AppError;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import org.json.simple.JSONObject;
 
@@ -61,7 +63,10 @@ public final class ContentFile {
      * @throws VERSCommon.AppError if cannot located the prefix and the suffix
      */
     public String getSAMSuri() throws AppError {
-        StringBuilder sb = new StringBuilder();
+        URI uri;
+        StringBuilder path = new StringBuilder();
+        
+        // StringBuilder sb = new StringBuilder();
         String s;
         String token[];
         int i, j, k;
@@ -69,10 +74,11 @@ public final class ContentFile {
         if (fileLocation == null) {
             return null;
         }
-        sb.append("https://content.prov.vic.gov.au/rest/records/");
-        s = parent.parent.ioPID;
+        // sb.append("https://content.prov.vic.gov.au/rest/records/");
+        path.append("/rest/records/");
 
         // get the suffix (only of the PID)
+        s = parent.parent.ioPID;
         token = s.split("/");
         switch (token.length) {
             // expected case where a prefix is not present
@@ -97,20 +103,32 @@ public final class ContentFile {
             /* if (s.charAt(i) == '-') {
                 continue;
             } */
-            sb.append(s.charAt(i));
+            // sb.append(s.charAt(i));
+            path.append(s.charAt(i));
             j++;
             if (j == 2 && k < 4) {
-                sb.append('/');
+                // sb.append('/');
+                path.append('/');
                 j = 0;
                 k++;
             }
         }
-        sb.append(s.substring(i));
-        sb.append("/sequence/");
-        sb.append(seqNbr);
-        sb.append("/files/");
-        sb.append(fileLocation.toString().replace('\\', '/'));
-        return sb.toString();
+        // sb.append(s.substring(i));
+        // sb.append("/sequence/");
+        // sb.append(seqNbr);
+        // sb.append("/files/");
+        // sb.append(fileLocation.toString().replace('\\', '/'));
+        path.append(s.substring(i));
+        path.append("/sequence/");
+        path.append(seqNbr);
+        path.append("/files/");
+        path.append(fileLocation.toString().replace('\\', '/'));
+        try {
+        uri = new URI("https", null, "content.prov.vic.gov.au", -1, path.toString(), null, null);
+        } catch (URISyntaxException use) {
+            throw new AppError("Could not generate a valid SAMS URI: "+use.getMessage());
+        }
+        return uri.toString();
     }
 
     /**
