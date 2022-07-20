@@ -42,7 +42,6 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -89,6 +88,7 @@ public class DAIngest {
     String setMetadata;     // A string containing metadata about the set
     boolean migration;      // true if doing migration from old DSA - back off on testing
     boolean validateOnly;   // true if only testing the VEO, not processing it
+    boolean reprocess;      // do the processing twice
     int ignoreAbove;        // if non-zero, ignore any VEOs larger than this size in KB
     double sample;          // if non-zero, this sets a sample rate, however always sample at least one VEO in each directory
     ResultSummary results;  // if non-null this is where a summary of the results go
@@ -99,7 +99,7 @@ public class DAIngest {
 
     private final static Logger LOG = Logger.getLogger("VPA.DAIngest");
 
-    private final static String USAGE = "VPA [-v] [-d] [-rs] -s <directory> [-o <directory>] [-sample <probability>] [-ignoreAbove <sizeKB>] [-dasmode] [-m] [-h] (files|directories)*";
+    private final static String USAGE = "VPA [-v] [-d] [-rs] -s <directory> [-o <directory>] [-sample <probability>] [-ignoreAbove <sizeKB>] [-dasmode] [-reprocess] [-m] [-h] (files|directories)*";
 
     /**
      * Default constructor
@@ -124,6 +124,7 @@ public class DAIngest {
         verbose = false;
         rdfIdPrefix = null;
         validateOnly = true;
+        reprocess = false;
         migration = false;
         ignoreAbove = 0;
         sample = 1.0;
@@ -172,6 +173,7 @@ public class DAIngest {
             System.out.println("  -dasmode: Generate the packages for the AMS, DAS, or SAMS");
             System.out.println("");
             System.out.println(" Optional and rarely needed:");
+            System.out.println("  -reprocess: do the processing twice");
             System.out.println("  -m: migration mode. Do not perform all the validation tests on V2 VEOs");
             System.out.println("  -h: use the real handle (PID) service. Do NOT use this option unless you really need to");
             System.out.println("  -sample <probability>: sample the VEOs rather than test them all");
@@ -202,6 +204,9 @@ public class DAIngest {
             System.out.println(" Validating mode - just validates and does not generate the packages for AWS, DAS, or SAMS");
         } else {
             System.out.println(" DAS mode - emulates the DAS and generates the packages for AWS, DAS, or SAMS");
+        }
+        if (reprocess) {
+            System.out.println(" Reprocessing mode - process the VEO twice");
         }
         System.out.println(" Producing a summary of results?: '" + (results == null ? "no" : "yes") + "'");
         System.out.println(" User id to be logged: '" + userId + "'");
@@ -320,6 +325,12 @@ public class DAIngest {
                         i++;
                         rdfIdPrefix = args[i];
                         i++;
+                        break;
+
+                    // '-reprocess' specifies running dasmode twice
+                    case "-reprocess":
+                        i++;
+                        reprocess = true;
                         break;
 
                     // '-dasmode' specifies the original mode of operation - simulating the DAS environment
@@ -516,7 +527,7 @@ public class DAIngest {
             } catch (IOException ioe) {
                 LOG.log(Level.WARNING, "***Ignoring file ''{0}'' we couldn't get the size", new Object[]{f.normalize().toString()});
             }
-            if (process(f) && !validateOnly) {
+            if (process(f) && reprocess && !validateOnly) {
                 reprocess(f);
             }
         } else {
