@@ -18,7 +18,7 @@ the AMS package), and the VEO itself (to the DAS package). Any errors are report
 
 It may also be used as a standalone tool to test V2 and V3 VEOs.
 
-## Using VPA
+## Using the VPA
 
 The VPA is run from the command line. 'vpa -help' will print a
 precis of the command line options. The package contains a BAT file.
