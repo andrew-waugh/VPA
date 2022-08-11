@@ -79,6 +79,7 @@ public final class VPA {
      * 20220622 2.30 Appending a file extension to sourceFileName will not occur if the case of the file extension differs
      * 20220718 2.31 Altered the SAMS URI construction to properly encode the characters in the path component
      * 20220720 2.32 (In DAIngest) Default is now to only process each VEO once, unless -reprocess is set
+     * 20220811 2.33 Migration mode turned off
      * </pre>
      */
     static String version() {
