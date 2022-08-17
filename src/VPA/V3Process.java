@@ -2,7 +2,6 @@
  * Copyright Public Record Office Victoria 2018
  * Licensed under the CC-BY license http://creativecommons.org/licenses/by/3.0/au/
  * Author Andrew Waugh
- * Version 1.0 February 2018
  */
 package VPA;
 
@@ -89,7 +88,7 @@ public final class V3Process {
 
         // set up analysis code
         try {
-            va = new VEOAnalysis(schemaDir, ltsf, outputDir, handlr, false, true, false, true, debug, verbose, true, results);
+            va  = new VEOAnalysis(schemaDir, ltsf, outputDir, handlr, false, true, false, true, debug, verbose, true, results);
         } catch (VEOError ve) {
             throw new AppFatal(ve.getMessage());
         }
@@ -399,6 +398,7 @@ public final class V3Process {
         private int cfSeqNoInVEO;               // sequence number of Content Files in this VEO
         private boolean aglsMP;                 // true if found an AGLS metadata package
         private boolean anzs5478MP;             // true if found an ANZS 5478 metadata package
+        private InformationObject tempIO;       // temporary IO to store ANZS 5478 metadata as its being read
         private String idValue;                 // value of an Identifier in an ANZS 5478 metadata package
         private String idScheme;                // scheme for value of an Identifier in an ANZS 5478 metadata package
 
@@ -424,6 +424,7 @@ public final class V3Process {
             cfSeqNoInVEO = 0;
             aglsMP = false;
             anzs5478MP = false;
+            tempIO = null;
             idValue = null;
             idScheme = null;
         }
@@ -538,6 +539,10 @@ public final class V3Process {
                         wtdwv = null;
                     }
                     break;
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record":
+                    tempIO = new InformationObject(null, 0);
+                    wtdwv = null;
+                    break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Identifier":
                     if (anzs5478MP) {
                         idValue = null;
@@ -645,8 +650,8 @@ public final class V3Process {
                     if (value.equals("http://prov.vic.gov.au/vers/schema/AGLS")) {
                         aglsMP = true;
                     }
-                    if (value.equals("http://prov.vic.gov.au/vers/schema/ANZS5478") || 
-                        value.equals("http://www.prov.vic.gov.au/VERS-as5478")) {
+                    if (value.equals("http://prov.vic.gov.au/vers/schema/ANZS5478")
+                            || value.equals("http://www.prov.vic.gov.au/VERS-as5478")) {
                         anzs5478MP = true;
                     }
                     break;
@@ -830,7 +835,7 @@ public final class V3Process {
                     if (!aglsMP) {
                         break;
                     }
-                    io.spatialCoverage.add(value);
+                    tempIO.spatialCoverage.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Identifier/anzs5478:IdentifierString":
                     if (!anzs5478MP) {
@@ -848,7 +853,7 @@ public final class V3Process {
                     if (!anzs5478MP) {
                         break;
                     }
-                    io.addIdentifier(idValue, idScheme);
+                    tempIO.addIdentifier(idValue, idScheme);
                     idValue = null;
                     idScheme = null;
                     break;
@@ -856,7 +861,7 @@ public final class V3Process {
                     if (!anzs5478MP) {
                         break;
                     }
-                    io.titles.add(value);
+                    tempIO.titles.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:DateRange/anzs5478:StartDate":
                     if (!anzs5478MP) {
@@ -864,46 +869,54 @@ public final class V3Process {
                     }
                     // could have multiple dates, choose first dateCreated found unless we find a longer
                     // (more precise) date
-                    if (io.dateCreated == null || io.dateCreated.length() < value.length()) {
-                        io.dateCreated = value;
+                    if (tempIO.dateCreated == null || tempIO.dateCreated.length() < value.length()) {
+                        tempIO.dateCreated = value;
                     }
-                    io.dates.add(new Date("StartDate", value));
+                    tempIO.dates.add(new Date("StartDate", value));
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:DateRange/anzs5478:EndDate":
                     if (!anzs5478MP) {
                         break;
                     }
-                    io.dates.add(new Date("EndDate", value));
+                    tempIO.dates.add(new Date("EndDate", value));
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Description":
                     if (!anzs5478MP) {
                         break;
                     }
-                    io.descriptions.add(value);
+                    tempIO.descriptions.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Coverage/anzs5478:JurisdictionalCoverage":
                     if (!anzs5478MP) {
                         break;
                     }
-                    io.jurisdictionalCoverage.add(value);
+                    tempIO.jurisdictionalCoverage.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Coverage/anzs5478:SpatialCoverage":
                     if (!anzs5478MP) {
                         break;
                     }
-                    io.spatialCoverage.add(value);
+                    tempIO.spatialCoverage.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Disposal/anzs5478:RetentionAndDisposalAuthority":
                     if (!anzs5478MP) {
                         break;
                     }
-                    io.disposalAuthority.rdas.add(value);
+                    tempIO.disposalAuthority.rdas.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Disposal/anzs5478:DisposalClass":
                     if (!anzs5478MP) {
                         break;
                     }
-                    io.disposalAuthority.disposalClass = value;
+                    tempIO.disposalAuthority.disposalClass = value;
+                    break;
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record":
+                    if (tempIO != null) {
+                        if (anzs5478MP) {
+                            // add data from tempIO to io
+                        }
+                        tempIO.free();
+                    }
                     break;
                 case "vers:InformationObject/vers:InformationPiece/vers:Label":
                     ip.label = value;
