@@ -80,10 +80,11 @@ public final class VPA {
      * 20220718 2.31 Altered the SAMS URI construction to properly encode the characters in the path component
      * 20220720 2.32 (In DAIngest) Default is now to only process each VEO once, unless -reprocess is set
      * 20220811 2.33 Migration mode turned off
+     * 20220908 2.34 Altered ANZS5478 processing to only pick up AMS metadata from a Record/Item entity
      * </pre>
      */
     static String version() {
-        return ("2.32");
+        return ("2.34");
     }
 
     /**

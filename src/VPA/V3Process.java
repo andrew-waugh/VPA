@@ -398,6 +398,7 @@ public final class V3Process {
         private int cfSeqNoInVEO;               // sequence number of Content Files in this VEO
         private boolean aglsMP;                 // true if found an AGLS metadata package
         private boolean anzs5478MP;             // true if found an ANZS 5478 metadata package
+        private String category;                // the category of ANZS5478 entity being read
         private InformationObject tempIO;       // temporary IO to store ANZS 5478 metadata as its being read
         private String idValue;                 // value of an Identifier in an ANZS 5478 metadata package
         private String idScheme;                // scheme for value of an Identifier in an ANZS 5478 metadata package
@@ -550,6 +551,7 @@ public final class V3Process {
                     }
                     wtdwv = null;
                     break;
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Category":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Identifier/anzs5478:IdentifierString":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Identifier/anzs5478:IdentifierScheme":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Name/anzs5478:NameWords":
@@ -835,7 +837,14 @@ public final class V3Process {
                     if (!aglsMP) {
                         break;
                     }
-                    tempIO.spatialCoverage.add(value);
+                    io.spatialCoverage.add(value);
+                    break;
+                    
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Category":
+                    if (!anzs5478MP) {
+                        break;
+                    }
+                    category = value;
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Identifier/anzs5478:IdentifierString":
                     if (!anzs5478MP) {
@@ -911,9 +920,31 @@ public final class V3Process {
                     tempIO.disposalAuthority.disposalClass = value;
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record":
+                    // copy the temporary IO metadata into the real one; the two tests are for sanity
                     if (tempIO != null) {
-                        if (anzs5478MP) {
-                            // add data from tempIO to io
+                        if (anzs5478MP && category.equalsIgnoreCase("Item")) {
+                            while (tempIO.ids.size()>0) {
+                                io.addIdentifier(tempIO.ids.remove(0));
+                            }
+                            while (tempIO.titles.size()>0) {
+                                io.titles.add(tempIO.titles.remove(0));
+                            }
+                            while (tempIO.dates.size()>0) {
+                                io.dates.add(tempIO.dates.remove(0));
+                            }
+                            while (tempIO.descriptions.size()>0) {
+                                io.descriptions.add(tempIO.descriptions.remove(0));
+                            }
+                            while (tempIO.jurisdictionalCoverage.size()>0) {
+                                io.jurisdictionalCoverage.add(tempIO.jurisdictionalCoverage.remove(0));
+                            }
+                            while (tempIO.spatialCoverage.size()>0) {
+                                io.spatialCoverage.add(tempIO.spatialCoverage.remove(0));
+                            }
+                            while (tempIO.disposalAuthority.rdas.size()>0) {
+                                io.disposalAuthority.rdas.add(tempIO.disposalAuthority.rdas.remove(0));
+                            }
+                            io.disposalAuthority.disposalClass = tempIO.disposalAuthority.disposalClass;
                         }
                         tempIO.free();
                     }
