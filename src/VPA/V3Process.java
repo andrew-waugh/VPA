@@ -399,7 +399,8 @@ public final class V3Process {
         private boolean aglsMP;                 // true if found an AGLS metadata package
         private boolean anzs5478MP;             // true if found an ANZS 5478 metadata package
         private String category;                // the category of ANZS5478 entity being read
-        private InformationObject tempIO;       // temporary IO to store ANZS 5478 metadata as its being read
+        private InformationObject as5478mp;     // place to store the best ANZS 5478 metadata seen so far
+        private InformationObject tempIO;       // place to store the ANZS 5478 as it is being read
         private String idValue;                 // value of an Identifier in an ANZS 5478 metadata package
         private String idScheme;                // scheme for value of an Identifier in an ANZS 5478 metadata package
 
@@ -425,6 +426,7 @@ public final class V3Process {
             cfSeqNoInVEO = 0;
             aglsMP = false;
             anzs5478MP = false;
+            as5478mp = null;
             tempIO = null;
             idValue = null;
             idScheme = null;
@@ -617,6 +619,34 @@ public final class V3Process {
             // if recording store element value in appropriate global variable
             switch (eFound) {
                 case "vers:InformationObject":
+                    // copy the selected metadata into the IO
+                    if (as5478mp != null) {
+                        while (as5478mp.ids.size() > 0) {
+                            io.addIdentifier(as5478mp.ids.remove(0));
+                        }
+                        while (as5478mp.titles.size() > 0) {
+                            io.titles.add(as5478mp.titles.remove(0));
+                        }
+                        while (as5478mp.dates.size() > 0) {
+                            io.dates.add(as5478mp.dates.remove(0));
+                        }
+                        while (as5478mp.descriptions.size() > 0) {
+                            io.descriptions.add(as5478mp.descriptions.remove(0));
+                        }
+                        while (as5478mp.jurisdictionalCoverage.size() > 0) {
+                            io.jurisdictionalCoverage.add(as5478mp.jurisdictionalCoverage.remove(0));
+                        }
+                        while (as5478mp.spatialCoverage.size() > 0) {
+                            io.spatialCoverage.add(as5478mp.spatialCoverage.remove(0));
+                        }
+                        while (as5478mp.disposalAuthority.rdas.size() > 0) {
+                            io.disposalAuthority.rdas.add(as5478mp.disposalAuthority.rdas.remove(0));
+                        }
+                        io.disposalAuthority.disposalClass = as5478mp.disposalAuthority.disposalClass;
+
+                        // free the AS 5478 metadata packages found
+                        as5478mp.free();
+                    }
                     break;
                 case "vers:InformationObject/vers:InformationObjectType":
                     io.label = value;
@@ -839,7 +869,7 @@ public final class V3Process {
                     }
                     io.spatialCoverage.add(value);
                     break;
-                    
+
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Category":
                     if (!anzs5478MP) {
                         break;
@@ -920,33 +950,28 @@ public final class V3Process {
                     tempIO.disposalAuthority.disposalClass = value;
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record":
-                    // copy the temporary IO metadata into the real one; the two tests are for sanity
+                    // If the metadata package was an Item, remember it & forget
+                    // about any earlier saved metadata. If it is an Item, only
+                    // remember it if we have not seen anything yet. Where an IO
+                    // has multiple metadtata packages, this means that the last
+                    // Item will be that used, and a File will only be used if
+                    // there are no Items.
                     if (tempIO != null) {
-                        if (anzs5478MP && category.equalsIgnoreCase("Item")) {
-                            while (tempIO.ids.size()>0) {
-                                io.addIdentifier(tempIO.ids.remove(0));
+                        if (anzs5478MP) {
+                            if (category.equalsIgnoreCase("Item")) {
+                                if (as5478mp != null) {
+                                    as5478mp.free();
+                                }
+                                as5478mp = tempIO;
+                            } else if (category.equalsIgnoreCase("File")) {
+                                if (as5478mp == null) {
+                                    as5478mp = tempIO;
+                                }
+                            } else {
+                                tempIO.free();
                             }
-                            while (tempIO.titles.size()>0) {
-                                io.titles.add(tempIO.titles.remove(0));
-                            }
-                            while (tempIO.dates.size()>0) {
-                                io.dates.add(tempIO.dates.remove(0));
-                            }
-                            while (tempIO.descriptions.size()>0) {
-                                io.descriptions.add(tempIO.descriptions.remove(0));
-                            }
-                            while (tempIO.jurisdictionalCoverage.size()>0) {
-                                io.jurisdictionalCoverage.add(tempIO.jurisdictionalCoverage.remove(0));
-                            }
-                            while (tempIO.spatialCoverage.size()>0) {
-                                io.spatialCoverage.add(tempIO.spatialCoverage.remove(0));
-                            }
-                            while (tempIO.disposalAuthority.rdas.size()>0) {
-                                io.disposalAuthority.rdas.add(tempIO.disposalAuthority.rdas.remove(0));
-                            }
-                            io.disposalAuthority.disposalClass = tempIO.disposalAuthority.disposalClass;
                         }
-                        tempIO.free();
+                        tempIO = null;
                     }
                     break;
                 case "vers:InformationObject/vers:InformationPiece/vers:Label":
