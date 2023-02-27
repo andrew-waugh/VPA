@@ -82,10 +82,11 @@ public final class VPA {
      * 20220811 2.33 Migration mode turned off
      * 20220908 2.34 Altered ANZS5478 processing to only pick up AMS metadata from a Record/Item entity
      * 20230224 2.35 Altered ANZS5478 processing to pick up AMS metadata from either a Record/Item (preferred) or Record/File entity
+     * 20230227 2.36 Now uses VPA mode in V3Analysis & V2Check to NOT check for a valid LTSF, or a valid V2 Security Classification value
      * </pre>
      */
     static String version() {
-        return ("2.35");
+        return ("2.36");
     }
 
     /**

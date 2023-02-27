@@ -90,7 +90,7 @@ public class V2Process {
         dtd = supportDir.resolve("versV2.dtd");
 
         // set up headless validation
-        veoc = new VEOCheck(dtd, logLevel, ltsf, migration, results);
+        veoc = new VEOCheck(dtd, logLevel, ltsf, true, migration, results);
 
         // set up parser
         parser = new V2VEOParser();

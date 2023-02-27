@@ -88,7 +88,7 @@ public final class V3Process {
 
         // set up analysis code
         try {
-            va  = new VEOAnalysis(schemaDir, ltsf, outputDir, handlr, false, true, false, true, debug, verbose, true, results);
+            va  = new VEOAnalysis(schemaDir, ltsf, outputDir, handlr, false, true, false, true, debug, verbose, true, true, results);
         } catch (VEOError ve) {
             throw new AppFatal(ve.getMessage());
         }
