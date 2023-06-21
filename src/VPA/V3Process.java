@@ -543,10 +543,12 @@ public final class V3Process {
                     }
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record":
                     tempIO = new InformationObject(null, 0);
                     wtdwv = null;
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Identifier":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Identifier":
                     if (anzs5478MP) {
                         idValue = null;
                         idScheme = null;
@@ -554,16 +556,27 @@ public final class V3Process {
                     wtdwv = null;
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Category":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Category":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Identifier/anzs5478:IdentifierString":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Identifier/anzs5478:IdentifierString":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Identifier/anzs5478:IdentifierScheme":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Identifier/anzs5478:IdentifierScheme":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Name/anzs5478:NameWords":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Name/anzs5478:NameWords":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:DateRange/anzs5478:StartDate":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:DateRange/anzs5478:StartDate":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:DateRange/anzs5478:EndDate":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:DateRange/anzs5478:EndDate":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Description":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Description":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Coverage/anzs5478:JurisdictionalCoverage":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Coverage/anzs5478:JurisdictionalCoverage":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Coverage/anzs5478:SpatialCoverage":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Coverage/anzs5478:SpatialCoverage":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Disposal/anzs5478:RetentionAndDisposalAuthority":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Disposal/anzs5478:RetentionAndDisposalAuthority":
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Disposal/anzs5478:DisposalClass":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Disposal/anzs5478:DisposalClass":
                     // todo other types of entity?
                     if (anzs5478MP) {
                         wtdwv = new HandleElement(HandleElement.VALUE_TO_STRING);
@@ -871,24 +884,28 @@ public final class V3Process {
                     break;
 
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Category":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Category":
                     if (!anzs5478MP) {
                         break;
                     }
                     category = value;
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Identifier/anzs5478:IdentifierString":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Identifier/anzs5478:IdentifierString":
                     if (!anzs5478MP) {
                         break;
                     }
                     idValue = value;
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Identifier/anzs5478:IdentifierScheme":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Identifier/anzs5478:IdentifierScheme":
                     if (!anzs5478MP) {
                         break;
                     }
                     idScheme = value;
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Identifier":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Identifier":
                     if (!anzs5478MP) {
                         break;
                     }
@@ -897,12 +914,14 @@ public final class V3Process {
                     idScheme = null;
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Name/anzs5478:NameWords":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Name/anzs5478:NameWords":
                     if (!anzs5478MP) {
                         break;
                     }
                     tempIO.titles.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:DateRange/anzs5478:StartDate":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:DateRange/anzs5478:StartDate":
                     if (!anzs5478MP) {
                         break;
                     }
@@ -914,42 +933,49 @@ public final class V3Process {
                     tempIO.dates.add(new Date("StartDate", value));
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:DateRange/anzs5478:EndDate":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:DateRange/anzs5478:EndDate":
                     if (!anzs5478MP) {
                         break;
                     }
                     tempIO.dates.add(new Date("EndDate", value));
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Description":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Description":
                     if (!anzs5478MP) {
                         break;
                     }
                     tempIO.descriptions.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Coverage/anzs5478:JurisdictionalCoverage":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Coverage/anzs5478:JurisdictionalCoverage":
                     if (!anzs5478MP) {
                         break;
                     }
                     tempIO.jurisdictionalCoverage.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Coverage/anzs5478:SpatialCoverage":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Coverage/anzs5478:SpatialCoverage":
                     if (!anzs5478MP) {
                         break;
                     }
                     tempIO.spatialCoverage.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Disposal/anzs5478:RetentionAndDisposalAuthority":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Disposal/anzs5478:RetentionAndDisposalAuthority":
                     if (!anzs5478MP) {
                         break;
                     }
                     tempIO.disposalAuthority.rdas.add(value);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record/anzs5478:Disposal/anzs5478:DisposalClass":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/anzs5478:Disposal/anzs5478:DisposalClass":
                     if (!anzs5478MP) {
                         break;
                     }
                     tempIO.disposalAuthority.disposalClass = value;
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/anzs5478:Record":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record":
                     // If the metadata package was an Item, remember it & forget
                     // about any earlier saved metadata. If it is an Item, only
                     // remember it if we have not seen anything yet. Where an IO
