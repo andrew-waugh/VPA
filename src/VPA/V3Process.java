@@ -42,7 +42,7 @@ public final class V3Process {
     private final VEOContentParser vcp;   // Parser to parse the VEOContent.xml file
     private final VEOHistoryParser vhp;   // Parser to parse the VEOHistory.xml file
     private final PIDService ps;          // Class to encapsulate the PID service
-    private final boolean light;          // true if test VEO only, do not process it
+    private final boolean light;          // true if testVEOs VEO only, do not process it
 
     // global variables storing information about this export (as a whole)
     private final StringBuilder log1;      // place to capture logging
@@ -86,7 +86,6 @@ public final class V3Process {
             debug = false;
         }
 
-        // set up analysis code
         try {
             va  = new VEOAnalysis(schemaDir, ltsf, outputDir, handlr, false, true, false, true, debug, verbose, true, true, results);
         } catch (VEOError ve) {
@@ -181,7 +180,7 @@ public final class V3Process {
         result = null;
         try {
             // unpack & test the VEO
-            tvr = va.testVEO(veo.toString(), packageDir);
+            tvr = va.testVEO(veo, packageDir);
             result = tvr.result;
             success = !tvr.hasErrors;
 
