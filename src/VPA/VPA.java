@@ -39,7 +39,7 @@ public final class VPA {
 
     // logging
     private final static Logger LOG = Logger.getLogger("VPA.VPA");
-    
+
     /**
      * Report on version...
      *
@@ -85,10 +85,11 @@ public final class VPA {
      * 20230227 2.36 Now uses VPA mode in V3Analysis & V2Check to NOT check for a valid LTSF, or a valid V2 Security Classification value
      * 20230621 2.37 ASNZS5478 processing updated to reflect latest version of Spec 4 (Metadata Packages)
      * 20230920 2.38 Minor alteration due to change in neoVEO API
+     * 20240920 2.39 Minor cleaning up in preparation for standard revision
      * </pre>
      */
     static String version() {
-        return ("2.38");
+        return ("2.39");
     }
 
     /**
@@ -112,8 +113,8 @@ public final class VPA {
     public VPA(Path outputDir, Path supportDir, String rdfIdPrefix, Level logLevel, boolean useRealHandleService, String pidServURL, String pidUserId, String pidPasswd, String pidPrefix, String targetURL, String author, boolean light) throws AppFatal {
         VPAConstInt(outputDir, supportDir, rdfIdPrefix, logLevel, useRealHandleService, pidServURL, pidUserId, pidPasswd, pidPrefix, targetURL, author, false, light, null);
     }
-    
-        /**
+
+    /**
      * Set up for processing VEOs
      *
      * @param outputDir directory in which packages are to be generated
@@ -136,7 +137,7 @@ public final class VPA {
     public VPA(Path outputDir, Path supportDir, String rdfIdPrefix, Level logLevel, boolean useRealHandleService, String pidServURL, String pidUserId, String pidPasswd, String pidPrefix, String targetURL, String author, boolean migration, boolean light) throws AppFatal {
         VPAConstInt(outputDir, supportDir, rdfIdPrefix, logLevel, useRealHandleService, pidServURL, pidUserId, pidPasswd, pidPrefix, targetURL, author, migration, light, null);
     }
-    
+
     /**
      * Set up for processing VEOs. This option adds the ability to produce a
      * result summary.
@@ -232,6 +233,7 @@ public final class VPA {
         }
 
         // default logging
+        System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         LOG.getParent().setLevel(logLevel);
         LOG.setLevel(null);
 
@@ -241,7 +243,7 @@ public final class VPA {
         // set up output packaging
         ff = new FileFormat(supportDir);
         packages = new Packages(ff);
-        
+
         // get valid long term sustainable formats
         try {
             ltsf = new LTSF(supportDir.resolve("validLTSF.txt"));

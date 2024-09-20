@@ -113,9 +113,10 @@ public final class V3Process {
 
         @Override
         public void publish(LogRecord logRecord) {
-            out.append(logRecord.getLevel());
-            out.append(": ");
+            // out.append(logRecord.getLevel());
+            // out.append(": ");
             out.append(logRecord.getMessage());
+            out.append("\n");
         }
 
         @Override
@@ -633,25 +634,25 @@ public final class V3Process {
                 case "vers:InformationObject":
                     // copy the selected metadata into the IO
                     if (as5478mp != null) {
-                        while (as5478mp.ids.size() > 0) {
+                        while (!as5478mp.ids.isEmpty()) {
                             io.addIdentifier(as5478mp.ids.remove(0));
                         }
-                        while (as5478mp.titles.size() > 0) {
+                        while (!as5478mp.titles.isEmpty()) {
                             io.titles.add(as5478mp.titles.remove(0));
                         }
-                        while (as5478mp.dates.size() > 0) {
+                        while (!as5478mp.dates.isEmpty()) {
                             io.dates.add(as5478mp.dates.remove(0));
                         }
-                        while (as5478mp.descriptions.size() > 0) {
+                        while (!as5478mp.descriptions.isEmpty()) {
                             io.descriptions.add(as5478mp.descriptions.remove(0));
                         }
-                        while (as5478mp.jurisdictionalCoverage.size() > 0) {
+                        while (!as5478mp.jurisdictionalCoverage.isEmpty()) {
                             io.jurisdictionalCoverage.add(as5478mp.jurisdictionalCoverage.remove(0));
                         }
-                        while (as5478mp.spatialCoverage.size() > 0) {
+                        while (!as5478mp.spatialCoverage.isEmpty()) {
                             io.spatialCoverage.add(as5478mp.spatialCoverage.remove(0));
                         }
-                        while (as5478mp.disposalAuthority.rdas.size() > 0) {
+                        while (!as5478mp.disposalAuthority.rdas.isEmpty()) {
                             io.disposalAuthority.rdas.add(as5478mp.disposalAuthority.rdas.remove(0));
                         }
                         io.disposalAuthority.disposalClass = as5478mp.disposalAuthority.disposalClass;
