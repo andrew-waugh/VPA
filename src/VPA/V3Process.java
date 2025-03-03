@@ -26,10 +26,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.xml.sax.Attributes;
@@ -44,10 +46,8 @@ public final class V3Process {
     private final PIDService ps;          // Class to encapsulate the PID service
     private final boolean light;          // true if testVEOs VEO only, do not process it
 
-    // global variables storing information about this export (as a whole)
-    private final StringBuilder log1;      // place to capture logging
-
     private final static Logger LOG = Logger.getLogger("VPA.V3Process");
+    private LogHandler lh;
 
     /**
      * Default constructor
@@ -64,21 +64,27 @@ public final class V3Process {
      * @throws AppFatal if a system error occurred
      */
     public V3Process(PIDService ps, Path outputDir, Path schemaDir, LTSF ltsf, Packages packages, Level logLevel, boolean light, ResultSummary results) throws AppFatal {
-        LogHandler handlr;
         boolean verbose, debug;
+        Handler h[];
+        int i;
 
         this.ps = ps;
         this.packages = packages;
         this.light = light;
 
-        // set up logging
-        log1 = new StringBuilder();
-        handlr = new LogHandler(log1);
+        // set to capture logging in V3Process (and in V3Analysis) into a
+        // VEOResult
+        h = LOG.getHandlers();
+        for (i=0; i<h.length; i++){
+            h[i].setLevel(Level.OFF);
+        }
+        lh = new LogHandler();
+        LOG.addHandler(lh);
 
-        if (logLevel == Level.FINE) {
+        if (LOG.getLevel() == Level.FINE) {
             verbose = true;
             debug = true;
-        } else if (logLevel == Level.INFO) {
+        } else if (LOG.getLevel() == Level.INFO) {
             verbose = true;
             debug = false;
         } else {
@@ -87,7 +93,7 @@ public final class V3Process {
         }
 
         try {
-            va  = new VEOAnalysis(schemaDir, ltsf, outputDir, handlr, false, true, false, true, debug, verbose, true, true, results);
+            va  = new VEOAnalysis(schemaDir, ltsf, outputDir, LOG, false, true, false, true, debug, verbose, true, true, results);
         } catch (VEOError ve) {
             throw new AppFatal(ve.getMessage());
         }
@@ -98,24 +104,22 @@ public final class V3Process {
     }
 
     /**
-     * Log Handler to capture Log entries into a StringBuilder. Note that the
-     * calling method passes in the StringBuilder to use. This handler is used
-     * to capture the output of the VERS3 processing software.
+     * Log Handler to capture Log entries into a StringBuilder. This handler is
+     * used to capture the output of the VERS3 processing software to be
+     * returned as a VEOResult.
      */
     private class LogHandler extends Handler {
+        Formatter sf = new SimpleFormatter();
 
-        private final StringBuilder out;
+        private StringBuilder out = new StringBuilder();
 
-        public LogHandler(StringBuilder out) {
+        public LogHandler() {
             super();
-            this.out = out;
         }
 
         @Override
         public void publish(LogRecord logRecord) {
-            // out.append(logRecord.getLevel());
-            // out.append(": ");
-            out.append(logRecord.getMessage());
+            out.append(sf.formatMessage(logRecord));
             out.append("\n");
         }
 
@@ -125,6 +129,17 @@ public final class V3Process {
 
         @Override
         public void close() {
+            reset();
+            out = null;
+        }
+        
+        public void reset() {
+            out.setLength(0);
+        }
+        
+        @Override
+        public String toString() {
+            return out.toString();
         }
     }
 
@@ -171,8 +186,8 @@ public final class V3Process {
         LOG.log(Level.INFO, "Processing ''{0}''", new Object[]{veo.normalize().toAbsolutePath().toString()});
         started = Instant.now();
 
-        // reset log1
-        log1.setLength(0);
+        // reset the local copy of the log
+        lh.reset();
 
         ios = null;
         events = null;
@@ -200,7 +215,7 @@ public final class V3Process {
 
                 // go no further if light...
                 if (light) {
-                    return new VEOResult(recordName, VEOResult.V3_VEO, success, log1.toString(), packageDir, started);
+                    return new VEOResult(recordName, VEOResult.V3_VEO, success, lh.toString(), packageDir, started);
                 }
 
                 // assign the PIDs to the VEO and the Record Items
@@ -225,7 +240,7 @@ public final class V3Process {
         } catch (AppFatal ae) {
             throw ae;
         } catch (AppError | VEOError ve) {
-            log1.append(ve.getMessage());
+            LOG.severe(ve.getMessage());
             success = false;
         } finally {
 
@@ -252,7 +267,7 @@ public final class V3Process {
         if (result == null) {
             result = "";
         }
-        logResult = log1.toString();
+        logResult = lh.toString();
         if (logResult != null && !logResult.equals("") && !logResult.trim().equals(" ")) {
             result = result + "\n" + logResult;
         }
@@ -696,6 +711,7 @@ public final class V3Process {
                         aglsMP = true;
                     }
                     if (value.equals("http://prov.vic.gov.au/vers/schema/ANZS5478")
+                            || value.equals("http://prov.vic.gov.au/vers/schema/ANZS5478#")
                             || value.equals("http://www.prov.vic.gov.au/VERS-as5478")) {
                         anzs5478MP = true;
                     }

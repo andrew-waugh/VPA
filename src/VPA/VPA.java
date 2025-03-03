@@ -86,10 +86,11 @@ public final class VPA {
      * 20230621 2.37 ASNZS5478 processing updated to reflect latest version of Spec 4 (Metadata Packages)
      * 20230920 2.38 Minor alteration due to change in neoVEO API
      * 20240920 2.39 Minor cleaning up in preparation for standard revision
+     * 20250301 2.40 Overhauled logging of V3Process to correctly capture V3Analysis results
      * </pre>
      */
     static String version() {
-        return ("2.39");
+        return ("2.40");
     }
 
     /**
