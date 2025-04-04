@@ -225,7 +225,6 @@ public final class InformationObject {
      *
      * @param veoPID the veoPID for this IO
      * @param ioPID to ioPID for this IO
-     * @throws AppFatal if minting the PID failed
      */
     public void assignPIDs(String veoPID, String ioPID) {
         this.veoPID = veoPID;
@@ -237,6 +236,7 @@ public final class InformationObject {
      *
      * @return a string representing the IO
      */
+    @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         int i;
