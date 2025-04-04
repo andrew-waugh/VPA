@@ -1047,7 +1047,14 @@ public final class V3Process {
         }
 
         /**
-         * Add an AGLS relationship to an IO
+         * Add an AGLS relationship to an IO.
+         * 
+         * COLLECTIVEACCESSHACK
+         * IMPORTANT: actually adding a relationship to the IO is currently
+         * suppressed as Collective Access fails when processing V3
+         * relationships. When Collective Access is fixed or replaced,
+         * uncomment the lines at the end of the method. Note that AS5478
+         * relationships are not captured.
          *
          * @param type type of relationship
          * @param target other end of the relationship
@@ -1075,9 +1082,12 @@ public final class V3Process {
             }
 
             // doesn't already exist, so add a new relationship
+            /* Commented out as Collective Access barfs on V3 relationships
+            /* When this is fixed, or Collective Access replace, uncomment out
             if (i == io.relations.size()) {
                 io.relations.add(new Relationship(type, newId, null));
             }
+            */
         }
     }
 }
