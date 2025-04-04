@@ -91,6 +91,10 @@ public final class InformationPiece {
 
     /**
      * Represent the IP as JSON
+     * 
+     * COLLECTIVEACCESSHACK. Collective access assumes all Information Pieces
+     * have a label. If no label was present, output a string containing a
+     * space.
      *
      * @return a JSONObject representing the IP
      * @throws VERSCommon.AppError if a failure occurred
@@ -102,6 +106,8 @@ public final class InformationPiece {
 
         if (label != null) {
             j.put("ipLabel", label);
+        } else {
+            j.put("ipLabel", " ");
         }
         j.put("ipSeqNo", seqNbr);
         if (contentFiles.size() > 0) {
