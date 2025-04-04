@@ -87,10 +87,11 @@ public final class VPA {
      * 20230920 2.38 Minor alteration due to change in neoVEO API
      * 20240920 2.39 Minor cleaning up in preparation for standard revision
      * 20250301 2.40 Overhauled logging of V3Process to correctly capture V3Analysis results
+     * 20250404 2.41 Collective access hack to ensure all IPs have a label (even if a space), and relationships are suppressed in AMS output
      * </pre>
      */
     static String version() {
-        return ("2.40");
+        return ("2.41");
     }
 
     /**
