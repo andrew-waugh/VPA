@@ -59,24 +59,41 @@ public final class Event {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
+        String s;
         int i;
 
         sb.append("   {\n");
-        sb.append("    \"eventDateTime\":\"" + Json.safe(timestamp) + "\",\n");
-        sb.append("    \"eventType\":\"" + Json.safe(eventType) + "\",\n");
+        sb.append("    \"eventDateTime\":\"");
+        sb.append(Json.safe(timestamp));
+        sb.append("\",\n");
+        sb.append("    \"eventType\":\"");
+        sb.append(Json.safe(eventType));
+        sb.append("\",\n");
         sb.append("    \"eventInitiators\":[\n");
         for (i = 0; i < initiators.size(); i++) {
-            sb.append("    \"initiator\":\"" + Json.safe(initiators.get(i)) + "\",\n");
+            if ((s = Json.safe(initiators.get(i))) != null) {
+                sb.append("    \"initiator\":\"");
+                sb.append(s);
+                sb.append("\",\n");
+            }
         }
         sb.append("    ]\n");
         sb.append("    \"eventDescriptions\":[\n");
         for (i = 0; i < descriptions.size(); i++) {
-            sb.append("    \"description\":\"" + Json.safe(descriptions.get(i)) + "\"],\n");
+            if ((s = Json.safe(initiators.get(i))) != null) {
+                sb.append("    \"description\":\"");
+                sb.append(s);
+                sb.append("\"],\n");
+            }
         }
         sb.append("    ]\n");
         sb.append("    \"eventErrors\":[\n");
         for (i = 0; i < errors.size(); i++) {
-            sb.append("    \"error\":\"" + Json.safe(errors.get(i)) + "\"],\n");
+            if ((s = Json.safe(initiators.get(i))) != null) {
+                sb.append("    \"error\":\"");
+                sb.append(s);
+                sb.append("\"],\n");
+            }
         }
         sb.append("    ]\n");
         return sb.toString();
