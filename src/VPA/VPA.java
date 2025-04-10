@@ -88,10 +88,12 @@ public final class VPA {
      * 20240920 2.39 Minor cleaning up in preparation for standard revision
      * 20250301 2.40 Overhauled logging of V3Process to correctly capture V3Analysis results
      * 20250404 2.41 Collective access hack to ensure all IPs have a label (even if a space), and relationships are suppressed in AMS output
+     * 20250410 2.42 Made tests for V3 AS5478 metadata schema consistent with that in V3Analysis
+     * 20250410 2.43 Made standard V2 DTD to be in "vers2.dtd" to match file name in VERSCommon
      * </pre>
      */
     static String version() {
-        return ("2.41");
+        return ("2.43");
     }
 
     /**

@@ -87,7 +87,7 @@ public class V2Process {
         this.rdfIdPrefix = rdfIdPrefix;
         this.packages = packages;
         this.light = light;
-        dtd = supportDir.resolve("versV2.dtd");
+        dtd = supportDir.resolve("vers2.dtd");
 
         // set up headless validation
         veoc = new VEOCheck(dtd, logLevel, ltsf, true, migration, results);
