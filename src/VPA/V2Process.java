@@ -518,6 +518,7 @@ public class V2Process {
                         document = io.addInformationPiece();
                     }
                     he = null;
+                    documentSource = null;
                     break;
                 case "vers:Document/vers:Encoding":
                     encNo++;
