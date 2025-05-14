@@ -42,6 +42,8 @@ public final class InformationObject {
     ArrayList<String> jurisdictionalCoverage;    // list of jurisdictional coverage metadata
     ArrayList<String> spatialCoverage; // list of spatial coverage metadata
     Disposal disposalAuthority; // disposal authorisations
+    ArrayList<String> canUseFor;   // list of canUseFor elements
+    ArrayList<ContextPath> contextPaths; // list of context paths
     ArrayList<InformationPiece> infoPieces; // information pieces
     ArrayList<MetadataPackage> metaPackages; // metadata packages
 
@@ -67,6 +69,8 @@ public final class InformationObject {
         spatialCoverage = new ArrayList<>();
         infoPieces = new ArrayList<>();
         disposalAuthority = new Disposal();
+        canUseFor = new ArrayList<>();
+        contextPaths = new ArrayList<>();
     }
 
     /**
@@ -242,35 +246,56 @@ public final class InformationObject {
         int i;
 
         sb.append("{\n");
-        sb.append("  \"veoFileName\":\"" + Json.safe(veoFileName) + "\",\n");
-        sb.append("  \"veoPID\": {\"scheme\": \"handle\", \"value\": \"" + Json.safe(veoPID) + "\"},\n");
-        sb.append("  \"veoVersion\":\"" + Json.safe(veoVersion) + "\",\n");
+        sb.append("  \"veoFileName\":\"");
+        sb.append(Json.safe(veoFileName));
+        sb.append("\",\n");
+        sb.append("  \"veoPID\": {\"scheme\": \"handle\", \"value\": \"");
+        sb.append(Json.safe(veoPID));
+        sb.append("\"},\n");
+        sb.append("  \"veoVersion\":\"");
+        sb.append(Json.safe(veoVersion));
+        sb.append("\",\n");
         if (v2VeoType != null) {
-            sb.append("  \"v2VeoType\":\"" + Json.safe(v2VeoType) + "\",\n");
+            sb.append("  \"v2VeoType\":\"");
+            sb.append(Json.safe(v2VeoType));
+            sb.append("\",\n");
         }
         if (v2VEOId != null) {
-            sb.append("  \"v2VEOId\":" + v2VEOId + ",\n");
+            sb.append("  \"v2VEOId\":");
+            sb.append(Json.safe(v2VEOId));
+            sb.append(",\n");
         }
         if (parent != null) {
-            sb.append("  \"parent\":\"" + Json.safe(parent.ioPID) + "\",\n");
+            sb.append("  \"parent\":\"");
+            sb.append(Json.safe(parent.ioPID));
+            sb.append("\",\n");
         }
-        sb.append("  \"ioPID\": {\"scheme\": \"handle\", \"value\": \"" + Json.safe(ioPID) + "\"},\n");
-        sb.append("  \"ioSeqNo\":" + seqNo + ",\n");
-        sb.append("  \"ioDepth\":" + depth + ",\n");
-        if (children.size() > 0) {
+        sb.append("  \"ioPID\": {\"scheme\": \"handle\", \"value\": \"");
+        sb.append(Json.safe(ioPID));
+        sb.append("\"},\n");
+        sb.append("  \"ioSeqNo\":");
+        sb.append(seqNo);
+        sb.append(",\n");
+        sb.append("  \"ioDepth\":");
+        sb.append(depth);
+        sb.append(",\n");
+        if (!children.isEmpty()) {
             sb.append("  \"children\":[\n");
             for (i = 0; i < children.size(); i++) {
-                sb.append("    {\"child\": {\"scheme\": \"handle\", \"value\": \"" + Json.safe(children.get(i).ioPID) + "\"} }");
+                sb.append("    {\"child\": {\"scheme\": \"handle\", \"value\": \"");
+                sb.append(Json.safe(children.get(i).ioPID));
+                sb.append("\"} }");
                 if (i < children.size() - 1) {
                     sb.append(",\n");
                 }
             }
             sb.append("],\n");
         }
-        if (titles.size() > 0) {
+        if (!titles.isEmpty()) {
             sb.append("  \"titles\":[\n");
             for (i = 0; i < titles.size(); i++) {
-                sb.append("    " + Json.safe(titles.get(i)));
+                sb.append("    ");
+                sb.append(Json.safe(titles.get(i)));
                 if (i < titles.size() - 1) {
                     sb.append(",\n");
                 }
@@ -278,16 +303,22 @@ public final class InformationObject {
             sb.append("],\n");
         }
         if (label != null) {
-            sb.append("  \"label\":\"" + Json.safe(label) + "\",\n");
+            sb.append("  \"label\":\"");
+            sb.append(Json.safe(label));
+            sb.append("\",\n");
         }
-        if (ids.size() > 0) {
+        if (!ids.isEmpty()) {
             sb.append("  \"identifiers\":[\n");
             for (i = 0; i < ids.size(); i++) {
                 String s = ids.get(i).itemId;
                 if (!s.startsWith("{")) {
                     s = "\"" + s + "\"";
                 }
-                sb.append("    {\"identifier\":{\"value\":" + s + ", \"scheme\":\"" + ids.get(i).idScheme + "\"}}");
+                sb.append("    {\"identifier\":{\"value\":");
+                sb.append(Json.safe(s));
+                sb.append(", \"scheme\":\"");
+                sb.append(ids.get(i).idScheme);
+                sb.append("\"}}");
                 if (i < ids.size() - 1) {
                     sb.append(",\n");
                 }
@@ -295,32 +326,61 @@ public final class InformationObject {
             sb.append("],\n");
         }
         if (dateCreated != null) {
-            sb.append("  \"dateCreated\":\"" + Json.safe(dateCreated) + "\",\n");
+            sb.append("  \"dateCreated\":\"");
+            sb.append(Json.safe(dateCreated));
+            sb.append("\",\n");
         }
         if (dateRegistered != null) {
-            sb.append("  \"dateRegistered\":\"" + Json.safe(dateRegistered) + "\",\n");
+            sb.append("  \"dateRegistered\":\"");
+            sb.append(Json.safe(dateRegistered));
+            sb.append("\",\n");
         }
-        if (dates.size() > 0) {
+        if (!dates.isEmpty()) {
             sb.append("  \"dates\":[\n");
             for (i = 0; i < dates.size(); i++) {
-                sb.append("    " + dates.get(i).toString());
+                sb.append("    ");
+                sb.append(dates.get(i).toString());
                 if (i < dates.size() - 1) {
                     sb.append(",\n");
                 }
             }
             sb.append("],\n");
         }
-        if (descriptions.size() > 0) {
+        if (!descriptions.isEmpty()) {
             sb.append("  \"descriptions\":[\n");
             for (i = 0; i < descriptions.size(); i++) {
-                sb.append("    {\"description\":\"" + Json.safe(descriptions.get(i)) + "\"}");
+                sb.append("    {\"description\":\"");
+                sb.append(Json.safe(descriptions.get(i)));
+                sb.append("\"}");
                 if (i < descriptions.size() - 1) {
                     sb.append(",\n");
                 }
             }
             sb.append("],\n");
         }
-        if (relations.size() > 0) {
+        if (!contextPaths.isEmpty()) {
+            sb.append("  \"contextPaths\":[\n");
+            for (i = 0; i < contextPaths.size(); i++) {
+                sb.append("    {\"contextPath\":");
+                sb.append(Json.safe(contextPaths.get(i).toString()));
+                if (i < contextPaths.size() - 1) {
+                    sb.append(",\n");
+                }
+            }
+            sb.append("],\n");
+        }
+        if (!canUseFor.isEmpty()) {
+            sb.append("  \"canUseForList\":[\n");
+            for (i = 0; i < canUseFor.size(); i++) {
+                sb.append("    {\"canUseFor\":");
+                sb.append(Json.safe(canUseFor.get(i)));
+                if (i < canUseFor.size() - 1) {
+                    sb.append(",\n");
+                }
+            }
+            sb.append("],\n");
+        }
+        if (!relations.isEmpty()) {
             sb.append("  \"relationships\":[\n");
             for (i = 0; i < relations.size(); i++) {
                 sb.append("    {\"relation\":");
@@ -331,20 +391,24 @@ public final class InformationObject {
             }
             sb.append("],\n");
         }
-        if (jurisdictionalCoverage.size() > 0) {
+        if (!jurisdictionalCoverage.isEmpty()) {
             sb.append("  \"jurisdictionalCoverage\":[\n");
             for (i = 0; i < jurisdictionalCoverage.size(); i++) {
-                sb.append("    {\"jurisdiction\":\"" + Json.safe(jurisdictionalCoverage.get(i)) + "\"}");
+                sb.append("    {\"jurisdiction\":\"");
+                sb.append(Json.safe(jurisdictionalCoverage.get(i)));
+                sb.append("\"}");
                 if (i < jurisdictionalCoverage.size() - 1) {
                     sb.append(",\n");
                 }
             }
             sb.append("],\n");
         }
-        if (spatialCoverage.size() > 0) {
+        if (!spatialCoverage.isEmpty()) {
             sb.append("  \"spatialCoverage\":[\n");
             for (i = 0; i < spatialCoverage.size(); i++) {
-                sb.append("    {\"place\":\"" + Json.safe(spatialCoverage.get(i)) + "\"}");
+                sb.append("    {\"place\":\"");
+                sb.append(Json.safe(spatialCoverage.get(i)));
+                sb.append("\"}");
                 if (i < spatialCoverage.size() - 1) {
                     sb.append(",\n");
                 }
@@ -352,7 +416,7 @@ public final class InformationObject {
             sb.append("],\n");
         }
         sb.append(disposalAuthority.toString());
-        if (metaPackages.size() > 0) {
+        if (!metaPackages.isEmpty()) {
             sb.append("  \"metadataPackages\":[\n");
             for (i = 0; i < metaPackages.size(); i++) {
                 sb.append(metaPackages.get(i).toString());
@@ -362,7 +426,7 @@ public final class InformationObject {
             }
             sb.append("],\n");
         }
-        if (infoPieces.size() > 0) {
+        if (!infoPieces.isEmpty()) {
             sb.append("  \"infoPieces\":[\n");
             for (i = 0; i < infoPieces.size(); i++) {
                 sb.append(infoPieces.get(i).toString());
@@ -413,7 +477,7 @@ public final class InformationObject {
         j2.put("value", ioPID);
         j1.put("ioSeqNo", seqNo);
         j1.put("ioDepth", depth);
-        if (children.size() > 0) {
+        if (!children.isEmpty()) {
             ja = new JSONArray();
             j1.put("children", ja);
             for (i = 0; i < children.size(); i++) {
@@ -425,7 +489,7 @@ public final class InformationObject {
                 ja.add(j2);
             }
         }
-        if (titles.size() > 0) {
+        if (!titles.isEmpty()) {
             ja = new JSONArray();
             j1.put("titles", ja);
             for (i = 0; i < titles.size(); i++) {
@@ -450,7 +514,7 @@ public final class InformationObject {
         if (label != null) {
             j1.put("label", label);
         }
-        if (ids.size() > 0) {
+        if (!ids.isEmpty()) {
             ja = new JSONArray();
             j1.put("identifiers", ja);
             for (i = 0; i < ids.size(); i++) {
@@ -465,14 +529,14 @@ public final class InformationObject {
             j1.put("dateRegistered", dateRegistered);
         }
          */
-        if (dates.size() > 0) {
+        if (!dates.isEmpty()) {
             ja = new JSONArray();
             j1.put("dates", ja);
             for (i = 0; i < dates.size(); i++) {
                 ja.add(dates.get(i).toJSON());
             }
         }
-        if (descriptions.size() > 0) {
+        if (!descriptions.isEmpty()) {
             ja = new JSONArray();
             j1.put("descriptions", ja);
             for (i = 0; i < descriptions.size(); i++) {
@@ -481,14 +545,30 @@ public final class InformationObject {
                 ja.add(j2);
             }
         }
-        if (relations.size() > 0) {
+        if (!contextPaths.isEmpty()) {
+            ja = new JSONArray();
+            j1.put("contextPaths", ja);
+            for (i = 0; i < contextPaths.size(); i++) {
+                ja.add(contextPaths.get(i).toJSON());
+            }
+        }
+        if (!canUseFor.isEmpty()) {
+            ja = new JSONArray();
+            j1.put("canUseForList", ja);
+            for (i = 0; i < canUseFor.size(); i++) {
+                j2 = new JSONObject();
+                j2.put("canUseFor", canUseFor.get(i));
+                ja.add(j2);
+            }
+        }
+        if (!relations.isEmpty()) {
             ja = new JSONArray();
             j1.put("relationships", ja);
             for (i = 0; i < relations.size(); i++) {
                 ja.add(relations.get(i).toJSON());
             }
         }
-        if (jurisdictionalCoverage.size() > 0) {
+        if (!jurisdictionalCoverage.isEmpty()) {
             ja = new JSONArray();
             j1.put("jurisdictionalCoverage", ja);
             for (i = 0; i < jurisdictionalCoverage.size(); i++) {
@@ -497,7 +577,7 @@ public final class InformationObject {
                 ja.add(j2);
             }
         }
-        if (spatialCoverage.size() > 0) {
+        if (!spatialCoverage.isEmpty()) {
             ja = new JSONArray();
             j1.put("spatialCoverage", ja);
             for (i = 0; i < spatialCoverage.size(); i++) {
@@ -507,14 +587,14 @@ public final class InformationObject {
             }
         }
         j1.put("disposalAuthority", disposalAuthority.toJSON());
-        if (metaPackages.size() > 0) {
+        if (!metaPackages.isEmpty()) {
             ja = new JSONArray();
             j1.put("metadataPackages", ja);
             for (i = 0; i < metaPackages.size(); i++) {
                 ja.add(metaPackages.get(i).toJSON());
             }
         }
-        if (infoPieces.size() > 0) {
+        if (!infoPieces.isEmpty()) {
             ja = new JSONArray();
             j1.put("infoPieces", ja);
             for (i = 0; i < infoPieces.size(); i++) {
@@ -522,5 +602,75 @@ public final class InformationObject {
             }
         }
         return j1;
+    }
+
+    /**
+     * Add a new context path found in one of the metadata packages to the IO.
+     * The domain may be null.
+     *
+     * @param domain
+     * @param value
+     */
+    public void addContextPath(String domain, String value) {
+        contextPaths.add(new ContextPath(domain, value));
+    }
+
+    /**
+     * Private class representing the contents of a context path
+     */
+    private class ContextPath {
+
+        String domain;
+        String value;
+
+        public ContextPath(String domain, String value) {
+            this.domain = domain;
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("   \"contextPathDomain\":");
+            if (domain != null) {
+                sb.append("\"");
+                sb.append(Json.safe(domain));
+                sb.append("\"");
+            } else {
+                sb.append("\"");
+                sb.append("<null>");
+                sb.append("\"");
+            }
+            sb.append("\n");
+            sb.append("   \"contextPathValue\":");
+            if (value != null) {
+                sb.append("\"");
+                sb.append(Json.safe(value));
+                sb.append("\"");
+            } else {
+                sb.append("<null>");
+            }
+            sb.append("\n");
+            return sb.toString();
+        }
+
+        public JSONObject toJSON() throws AppError {
+            JSONObject j1, j2;
+            
+            j1 = new JSONObject();
+            j2 = new JSONObject();
+            if (domain != null) {
+                j2.put("domain", domain);
+            } else {
+                j2.put("domain", "[No domain]");
+            }
+            if (value != null) {
+                j2.put("value", value);
+            } else {
+                j2.put("value", "[No value]");
+            }
+            j1.put("contextPath", j2);
+            return j1;
+        }
     }
 }

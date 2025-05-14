@@ -345,6 +345,8 @@ public class V2Process {
         private Path veoDir;                // directory in which to put content
         private Identifier id;              // identifier being read
         private boolean light;              // don't extract document data
+        private String cpDomain;                // a context path domain in a metadata package
+        private String cpValue;                 // a context path value in a metadata package
 
         public V2VEOParser() throws AppFatal {
             clear();
@@ -671,11 +673,21 @@ public class V2Process {
                 case "vers:FileMetadata/vers:VEOIdentifier/vers:VERSRecordIdentifier/vers:Text":
                 case "vers:Document/vers:DocumentMetadata/vers:DocumentTitle/vers:Text": //tc
                 case "vers:Document/vers:DocumentMetadata/vers:DocumentSource/vers:Text": //tc
+                case "vers:FileMetadata/versterms:contextPath/versterms:contextPathDomain":
+                case "vers:FileMetadata/vers:ContextPath/vers:ContextPathDomain":
+                case "vers:FileMetadata/versterms:contextPath/versterms:contextPathValue":
+                case "vers:FileMetadata/vers:ContextPath/vers:ContextPathValue":
                     if (finalVersion) {
                         he = new HandleElement(HandleElement.VALUE_TO_STRING);
                     } else {
                         he = null;
                     }
+                    break;
+                case "vers:FileMetadata/vers:ContextPath":
+                case "vers:FileMetadata/versterms:contextPath":
+                    cpDomain = null;
+                    cpValue = null;
+                    he = null;
                     break;
                 case "vers:Document/vers:Encoding/vers:EncodingMetadata/vers:FileRendering/vers:RenderingKeywords":
                 case "vers:Document/vers:Encoding/vers:EncodingMetadata/vers:SourceFileIdentifier":
@@ -925,6 +937,26 @@ public class V2Process {
                 case "vers:RecordMetadata/vers:VEOIdentifier/vers:VERSRecordIdentifier/vers:Text":
                     if (finalVersion) {
                         id.itemId = value;
+                    }
+                    break;
+                case "vers:FileMetadata/versterms:contextPath":
+                case "vers:FileMetadata/vers:ContextPath":
+                    if (finalVersion) {
+                        io.addContextPath(cpDomain, cpValue);
+                        cpDomain = null;
+                        cpValue = null;
+                    }
+                    break;
+                case "vers:FileMetadata/versterms:contextPath/versterms:contextPathDomain":
+                case "vers:FileMetadata/vers:ContextPath/vers:ContextPathDomain":
+                    if (finalVersion) {
+                        cpDomain = value;
+                    }
+                    break;
+                case "vers:FileMetadata/versterms:contextPath/versterms:contextPathValue":
+                case "vers:FileMetadata/vers:ContextPath/vers:ContextPathValue":
+                    if (finalVersion) {
+                        cpValue = value;
                     }
                     break;
                 case "vers:RecordMetadata/vers:VEOIdentifier":

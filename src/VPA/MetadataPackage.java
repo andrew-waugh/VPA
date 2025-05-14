@@ -43,13 +43,22 @@ public final class MetadataPackage {
      *
      * @return a string representing the event
      */
+    @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("    {\n");
-        sb.append("    \"id\":" + id + ",\n");
-        sb.append("    \"schema\":\"" + Json.safe(schema) + "\",\n");
-        sb.append("    \"format\":\"" + Json.safe(syntax) + "\",\n");
-        sb.append("    \"content\":\"" + Json.safe(content) + "\"");
+        sb.append("    \"id\":");
+        sb.append(id);
+        sb.append(",\n");
+        sb.append("    \"schema\":\"");
+        sb.append(Json.safe(schema));
+        sb.append("\",\n");
+        sb.append("    \"format\":\"");
+        sb.append(Json.safe(syntax));
+        sb.append("\",\n");
+        sb.append("    \"content\":\"");
+        sb.append(Json.safe(content));
+        sb.append("\"");
         sb.append("}");
         return sb.toString();
     }

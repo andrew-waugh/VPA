@@ -75,7 +75,7 @@ public final class V3Process {
         // set to capture logging in V3Process (and in V3Analysis) into a
         // VEOResult
         h = LOG.getHandlers();
-        for (i=0; i<h.length; i++){
+        for (i = 0; i < h.length; i++) {
             h[i].setLevel(Level.OFF);
         }
         lh = new LogHandler();
@@ -109,6 +109,7 @@ public final class V3Process {
      * returned as a VEOResult.
      */
     private class LogHandler extends Handler {
+
         Formatter sf = new SimpleFormatter();
 
         private StringBuilder out = new StringBuilder();
@@ -132,11 +133,11 @@ public final class V3Process {
             reset();
             out = null;
         }
-        
+
         public void reset() {
             out.setLength(0);
         }
-        
+
         @Override
         public String toString() {
             return out.toString();
@@ -418,6 +419,8 @@ public final class V3Process {
         private InformationObject tempIO;       // place to store the ANZS 5478 as it is being read
         private String idValue;                 // value of an Identifier in an ANZS 5478 metadata package
         private String idScheme;                // scheme for value of an Identifier in an ANZS 5478 metadata package
+        private String cpDomain;                // a context path domain in a metadata package
+        private String cpValue;                 // a context path value in a metadata package
 
         public VEOContentParser() throws AppFatal {
             parser = new XMLParser(this);
@@ -519,6 +522,39 @@ public final class V3Process {
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/vers:MetadataSchemaIdentifier":
                 case "vers:InformationObject/vers:MetadataPackage/vers:MetadataSyntaxIdentifier":
+                // we accept both UseFor and CanUseFor as both were used over
+                // the development period. CanUseFor is correct
+                case "vers:InformationObject/vers:MetadataPackage/vers:UseFor":
+                case "vers:InformationObject/vers:MetadataPackage/vers:CanUseFor":
+                    wtdwv = new HandleElement(HandleElement.VALUE_TO_STRING);
+                    break;
+                // due to inprecision during the development work, we accept
+                // both vers:ContextPath and versterms:contextPath (note mixed
+                // uses such as vers:ContextPath/versterms:contextPath cannot
+                // be used). The context path can be put immediately under the
+                // vers:MetadataPackage element, or within the RDF
+                case "vers:InformationObject/vers:MetadataPackage/vers:ContextPath":
+                case "vers:InformationObject/vers:MetadataPackage/versterms:ContextPath":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/vers:ContextPath":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/versterms:contextPath":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/vers:ContextPath":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/versterms:contextPath":
+                    cpDomain = null;
+                    cpValue = null;
+                    wtdwv = null;
+                    break;
+                case "vers:InformationObject/vers:MetadataPackage/vers:ContextPath/vers:ContextPathDomain":
+                case "vers:InformationObject/vers:MetadataPackage/versterms:ContextPath/versterms:ContextPathDomain":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/vers:ContextPath/vers:ContextPathDomain":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/versterms:contextPath/versterms:contextPathDomain":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/vers:ContextPath/vers:ContextPathDomain":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/versterms:contextPath/versterms:contextPathDomain":
+                case "vers:InformationObject/vers:MetadataPackage/vers:ContextPath/vers:ContextPathValue":
+                case "vers:InformationObject/vers:MetadataPackage/versterms:ContextPath/versterms:ContextPathValue":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/vers:ContextPath/vers:ContextPathValue":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/versterms:contextPath/versterms:contextPathValue":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/vers:ContextPath/vers:ContextPathValue":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/versterms:contextPath/versterms:contextPathValue":
                     wtdwv = new HandleElement(HandleElement.VALUE_TO_STRING);
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:date":
@@ -674,6 +710,7 @@ public final class V3Process {
 
                         // free the AS 5478 metadata packages found
                         as5478mp.free();
+                        as5478mp = null;
                     }
                     break;
                 case "vers:InformationObject/vers:InformationObjectType":
@@ -718,6 +755,40 @@ public final class V3Process {
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/vers:MetadataSyntaxIdentifier":
                     mp.syntax = value;
+                    break;
+                // see comment in startElement about these elements
+                case "vers:InformationObject/vers:MetadataPackage/vers:UseFor":
+                case "vers:InformationObject/vers:MetadataPackage/vers:CanUseFor":
+                    io.canUseFor.add(value);
+                    break;
+                // see comment in startElement about these elements
+                case "vers:InformationObject/vers:MetadataPackage/vers:ContextPath":
+                case "vers:InformationObject/vers:MetadataPackage/versterms:ContextPath":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/vers:ContextPath":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/versterms:contextPath":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/vers:ContextPath":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/versterms:contextPath":
+                    io.addContextPath(cpDomain, cpValue);
+                    cpDomain = null;
+                    cpValue = null;
+                    break;
+                // see comment in startElement about these elements
+                case "vers:InformationObject/vers:MetadataPackage/vers:ContextPath/vers:ContextPathDomain":
+                case "vers:InformationObject/vers:MetadataPackage/versterms:ContextPath/versterms:ContextPathDomain":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/vers:ContextPath/vers:ContextPathDomain":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/versterms:contextPath/versterms:contextPathDomain":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/vers:ContextPath/vers:ContextPathDomain":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/versterms:contextPath/versterms:contextPathDomain":
+                    cpDomain = value;
+                    break;
+                // see comment in startElement about these elements
+                case "vers:InformationObject/vers:MetadataPackage/vers:ContextPath/vers:ContextPathValue":
+                case "vers:InformationObject/vers:MetadataPackage/versterms:ContextPath/versterms:ContextPathValue":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/vers:ContextPath/vers:ContextPathValue":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/versterms:contextPath/versterms:contextPathValue":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/vers:ContextPath/vers:ContextPathValue":
+                case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/anzs5478:Record/versterms:contextPath/versterms:contextPathValue":
+                    cpValue = value;
                     break;
                 case "vers:InformationObject/vers:MetadataPackage/rdf:RDF/rdf:Description/dcterms:date":
                     if (!aglsMP) {
@@ -1048,11 +1119,10 @@ public final class V3Process {
 
         /**
          * Add an AGLS relationship to an IO.
-         * 
-         * COLLECTIVEACCESSHACK
-         * IMPORTANT: actually adding a relationship to the IO is currently
-         * suppressed as Collective Access fails when processing V3
-         * relationships. When Collective Access is fixed or replaced,
+         *
+         * COLLECTIVEACCESSHACK IMPORTANT: actually adding a relationship to the
+         * IO is currently suppressed as Collective Access fails when processing
+         * V3 relationships. When Collective Access is fixed or replaced,
          * uncomment the lines at the end of the method. Note that AS5478
          * relationships are not captured.
          *
@@ -1087,7 +1157,7 @@ public final class V3Process {
             if (i == io.relations.size()) {
                 io.relations.add(new Relationship(type, newId, null));
             }
-            */
+             */
         }
     }
 }

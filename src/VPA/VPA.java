@@ -90,10 +90,11 @@ public final class VPA {
      * 20250404 2.41 Collective access hack to ensure all IPs have a label (even if a space), and relationships are suppressed in AMS output
      * 20250410 2.42 Made tests for V3 AS5478 metadata schema consistent with that in V3Analysis
      * 20250410 2.43 Made standard V2 DTD to be in "vers2.dtd" to match file name in VERSCommon
+     * 20250514 2.44 Added harvesting of contextPath and canUseFor metadata elements
      * </pre>
      */
     static String version() {
-        return ("2.43");
+        return ("2.44");
     }
 
     /**
